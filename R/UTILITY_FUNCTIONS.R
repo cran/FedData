@@ -4,11 +4,20 @@
 #'
 #' @param x A character string representing the name of a package.
 pkgTest <- function(x){
-  if (!require(x,character.only = TRUE))
-  {
-    install.packages(x,dependencies=TRUE)
-    if(!require(x,character.only = TRUE)) stop("Package not found")
+  if(grepl("/",x)){
+    pkgName <- basename(x)
+  }else{
+    pkgName <- x
   }
+  if (!suppressWarnings(require(pkgName,character.only = TRUE)))
+  {
+    if(grepl("/",x)){
+      suppressWarnings(devtools::install_github(x))
+    }else{
+      install.packages(x,dependencies=TRUE, repos="http://cran.rstudio.com")
+    }
+  }
+  if(!suppressWarnings(require(pkgName,character.only = TRUE))) stop("Package not found")
 }
 
 #'Get the rightmost "n" characters of a character string.
@@ -75,6 +84,7 @@ sequential.duplicated <- function(x, rows=F){
 #' @param nc Should files of the same type not be clobbered?
 #' @return A logical vector of the same length as x.
 wgetDownload <- function(url, destdir=getwd(), timestamping=T, nc=F){
+  destdir <- gsub(" ","\\ ",destdir, fixed=T)
   if(!any(c(timestamping,nc))){
     status <- system(paste("wget -nd --quiet --directory-prefix=",destdir," ",url,sep=''))
   }else if(timestamping){
@@ -85,5 +95,70 @@ wgetDownload <- function(url, destdir=getwd(), timestamping=T, nc=F){
   
   # If status is still not zero, report a warning
   if (status!=0)
+    warning("Download of ",url," had nonzero exit status")
+}
+
+#' Use RCurl to download a file.
+#'
+#' This function makes it easy to implement timestamping and no-clobber of files.
+#' Unlike \link{wgetDownload}, it doesn't require an external command-line tool to 
+#' be installed.
+#'
+#' If both \code{timestamping} and \code{nc} are TRUE, nc behavior trumps timestamping.
+#'
+#' @param url The location of a file.
+#' @param destdir Where the file should be downloaded to.
+#' @param timestamping Should only newer files be downloaded?
+#' @param nc Should files of the same type not be clobbered?
+#' @param verbose Should cURL output be shown?
+#' @param progress Should a progress bar be shown with cURL output?
+#' @return A logical vector of the same length as x.
+curlDownload <- function(url, destdir=getwd(), timestamping=T, nc=F, verbose=F, progress=F){
+  
+  destdir <- normalizePath(destdir)
+  destfile <- paste0(destdir,'/',basename(url))
+  #   destfile <- gsub(" ","\\ ",destfile, fixed=T)
+  
+  if(nc & file.exists(destfile)) return()
+  
+  if(timestamping & file.exists(destfile)){
+    cat("\nDownloading file (if necessary):",url,"\n")
+    temp.file <- paste0(tempdir(),"/",basename(url))
+    f <- CFILE(temp.file, "wb")
+    status <- curlPerform(url = url, 
+                          writedata = f@ref,
+                          verbose=verbose,
+                          noprogress=!progress,
+                          fresh.connect=T, 
+                          ftp.use.epsv=F, 
+                          forbid.reuse=T, 
+                          timecondition=T, 
+                          timevalue=base::file.info(destfile)$mtime)
+    close(f)
+    if(file.info(temp.file)$size > 0){
+      file.copy(temp.file,destfile, overwrite=T)
+    }
+    
+    #     status <- system(paste0("curl -R --globoff --create-dirs -z ",destfile," --url ",url," --output ",destfile))
+  }else{
+    cat("\nDownloading file:",url,"\n")
+    temp.file <- paste0(tempdir(),"/",basename(url))
+    f <- CFILE(temp.file, "wb")
+    status <- curlPerform(url = url, 
+                          writedata = f@ref,
+                          verbose=verbose,
+                          noprogress=!progress,
+                          fresh.connect=T, 
+                          ftp.use.epsv=F, 
+                          forbid.reuse=T)
+    close(f)
+    file.copy(temp.file,destfile, overwrite=T)
+    
+    
+    #     status <- system(paste0("curl -Rs --globoff --create-dirs --url ",url," --output ",destfile))
+  }
+  
+  # If status is still not zero, report a warning
+  if (!(status %in% c(0,3)))
     warning("Download of ",url," had nonzero exit status")
 }

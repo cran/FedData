@@ -39,6 +39,8 @@ getNED <- function(template, label, res=NULL, raw.dir="./RAW/NED/", extraction.d
     res <- "1"
   }
   
+  template <- polygonFromExtent(extent.latlon,"+proj=longlat +ellps=WGS84")
+  
   if(file.exists(paste(rasters.dir,"/NED_",res,".tif", sep='')) & !force.redo){
     extracted.DEM <- raster::raster(paste(rasters.dir,"/NED_",res,".tif", sep=''))
     return(extracted.DEM)
@@ -51,7 +53,7 @@ getNED <- function(template, label, res=NULL, raw.dir="./RAW/NED/", extraction.d
   
   tilesLocations <- as.matrix(expand.grid(norths,wests,stringsAsFactors = FALSE))
   
-  cat("\nArea of interest includes",nrow(tilesLocations),"NED tiles.")
+  cat("\nArea of interest includes",nrow(tilesLocations),"NED tiles.\n")
   
   # Download and crop tiles
   tiles <- apply(tilesLocations,1,function(loc){
@@ -60,7 +62,7 @@ getNED <- function(template, label, res=NULL, raw.dir="./RAW/NED/", extraction.d
   
   # Mosaic all tiles
   if(length(tiles)>1){
-    cat('Mosaic-ing NED tiles.\n\n')
+    cat('\nMosaic-ing NED tiles.\n')
     flush.console()
     
     tiles$fun <- mean
@@ -70,6 +72,8 @@ getNED <- function(template, label, res=NULL, raw.dir="./RAW/NED/", extraction.d
   }else{
     tiles <- tiles[[1]]
   }
+  
+  tiles <- raster::crop(tiles,sp::spTransform(template,sp::CRS(raster::projection(tiles))), snap="out")
   
   raster::writeRaster(tiles, paste(rasters.dir,"/NED_",res,".tif", sep=''), datatype="FLT4S", options=c("COMPRESS=DEFLATE", "ZLEVEL=9", "INTERLEAVE=BAND"), overwrite=T, setStatistics=FALSE)
   
@@ -97,14 +101,16 @@ downloadNEDTile <- function(res=NULL, tileNorthing, tileWesting, raw.dir){
     res <- "1"
   }
   
-  dir.create(paste(raw.dir,'/',res, sep=''), showWarnings = FALSE, recursive = TRUE)
+  destdir <- paste(raw.dir,'/',res, sep='')
+  
+  dir.create(destdir, showWarnings = FALSE, recursive = TRUE)
   
   tileWesting <- formatC(tileWesting, width = 3, format = "d", flag = "0") 
   tileNorthing <- formatC(tileNorthing, width = 2, format = "d", flag = "0") 
   
   url <- paste('ftp://rockyftp.cr.usgs.gov/vdelivery/Datasets/Staged/NED/',res,'/ArcGrid/n',tileNorthing,'w',tileWesting,'.zip',sep='')
   destdir <- paste(raw.dir,'/',res,'/',sep='')
-  wgetDownload(url=url, destdir=destdir)
+  curlDownload(url=url, destdir=destdir)
   
   return(normalizePath(paste(destdir,'n',tileNorthing,'w',tileWesting,'.zip',sep='')))
 }
@@ -130,6 +136,8 @@ getNEDTile <- function(template=NULL, res, tileNorthing, tileWesting, raw.dir){
   if (!dir.create(tmpdir))
     stop("failed to create my temporary directory")
   
+  cat("\n(Down)Loading NED tile for",tileNorthing,"N and",tileWesting,"W.")
+  
   file <- downloadNEDTile(res=res, tileNorthing=tileNorthing, tileWesting=tileWesting, raw.dir=raw.dir)
   
   unzip(file,exdir=tmpdir)
@@ -137,12 +145,12 @@ getNEDTile <- function(template=NULL, res, tileNorthing, tileWesting, raw.dir){
   dirs <- list.dirs(tmpdir,full.names = TRUE,recursive=F)
   dirs <- dirs[grepl("grdn",dirs)]
   
-  tile <- raster::raster(rgdal::readGDAL(dirs))
+  tile <- raster::raster(rgdal::readGDAL(dirs, silent=T))
   
   unlink(tmpdir, recursive = TRUE)
   
   if(!is.null(template)){
-    tile <- raster::crop(tile,sp::spTransform(template,sp::CRS(raster::projection(tile))), snap="out")
+    tryCatch(tile <- raster::crop(tile,sp::spTransform(template,sp::CRS(raster::projection(tile))), snap="out"), error=function(e){tile <- raster::crop(tile,sp::spTransform(template,sp::CRS(raster::projection(tile))))})
   }
   
   return(tile)

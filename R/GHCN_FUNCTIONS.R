@@ -35,9 +35,9 @@ getGHCNDaily <- function(template=NULL, label=NULL, elements=NULL, raw.dir="./RA
   dir.create(vectors.dir, showWarnings = FALSE, recursive = TRUE)
   dir.create(tables.dir, showWarnings = FALSE, recursive = TRUE)
   
-  cat("\nGetting spatial data of GHCN stations")
+  cat("\n(Down)Loading GHCN station inventory.")
   if(!force.redo & file.exists(paste(vectors.dir,"/stations.shp",sep=''))){
-    stations.sp <- rgdal::readOGR(dsn=vectors.dir,layer="stations")
+    stations.sp <- rgdal::readOGR(dsn=vectors.dir,layer="stations",verbose=F)
   }else{
     stations.sp <- getGHCNInventory(template=template, raw.dir=raw.dir)
     suppressWarnings(rgdal::writeOGR(stations.sp, vectors.dir, "stations","ESRI Shapefile", overwrite_layer=TRUE))
@@ -79,6 +79,7 @@ getGHCNDaily <- function(template=NULL, label=NULL, elements=NULL, raw.dir="./RA
   }
   
   daily <- lapply(stations.sp$ID,function(station){
+    cat("\n(Down)Loading GHCN station data for station",as.character(station))
     return(getGHCNDailyStation(ID=station, elements=elements, raw.dir=raw.dir, standardize=standardize, force.redo=force.redo))
   })
   names(daily) <- stations.sp$ID
@@ -107,9 +108,9 @@ downloadGHCNDailyStation <- function(ID, raw.dir, force.redo=F){
   
   url <- paste("ftp://ftp.ncdc.noaa.gov/pub/data/ghcn/daily/all/",ID,".dly",sep='')
   if(!force.redo){
-    wgetDownload(url=url, destdir=raw.dir, timestamping=F, nc=T)
+    curlDownload(url=url, destdir=raw.dir, timestamping=T)
   }else{
-    wgetDownload(url=url, destdir=raw.dir, timestamping=F, nc=F)
+    curlDownload(url=url, destdir=raw.dir, timestamping=F)
   }
   
   return(normalizePath(paste(raw.dir,ID,".dly",sep='')))
@@ -133,7 +134,7 @@ getGHCNDailyStation <- function(ID, elements=NULL, raw.dir, standardize=F, force
   
   file <- downloadGHCNDailyStation(ID=ID, raw.dir=paste(raw.dir,"/DAILY/",sep=''), force.redo=force.redo)
   
-  daily <- utils::read.fwf(file,c(11,4,2,4,rep(c(5,1,1,1),31)))
+  daily <- utils::read.fwf(file,c(11,4,2,4,rep(c(5,1,1,1),31)), stringsAsFactors=F)
   names(daily)[1:4] <- c("STATION","YEAR","MONTH","ELEMENT")
   
   if(is.null(elements)){
@@ -196,17 +197,21 @@ getGHCNInventory <- function(template=NULL, elements=NULL, raw.dir){
   
   url <- "ftp://ftp.ncdc.noaa.gov/pub/data/ghcn/daily/ghcnd-inventory.txt"
   destdir <- raw.dir
-  wgetDownload(url=url, destdir=destdir)
+  curlDownload(url=url, destdir=destdir)
   
-  system(paste("sed -i -E 's/#/ /' ",paste(raw.dir,"ghcnd-inventory.txt",sep=''),sep=''))
-  system(paste("rm ",paste(raw.dir,"ghcnd-inventory.txt-E",sep=''),sep=''))
+#   system(paste("sed -i -E 's/#/ /' ",paste(raw.dir,"ghcnd-inventory.txt",sep=''),sep=''))
+#   system(paste("rm ",paste(raw.dir,"ghcnd-inventory.txt-E",sep=''),sep=''))
   
-  station.inventory <- utils::read.fwf(paste(raw.dir,"ghcnd-inventory.txt",sep=''),c(11,1,8,1,9,1,4,1,4,1,4))[,seq(1,11,2)]
+  station.inventory <- utils::read.fwf(paste(raw.dir,"ghcnd-inventory.txt",sep=''),c(11,1,8,1,9,1,4,1,4,1,4), stringsAsFactors=F)[,seq(1,11,2)]
   names(station.inventory) <- c("ID","LATITUDE","LONGITUDE","ELEMENT","YEAR_START","YEAR_END")
   
   # Convert to SPDF
-  stations.sp <- sp::SpatialPointsDataFrame(coords=station.inventory[,c("LONGITUDE","LATITUDE")],station.inventory,proj4string=sp::CRS("+proj=longlat"))
-  
+  stations.sp <- sp::SpatialPointsDataFrame(coords=station.inventory[,c("LONGITUDE","LATITUDE")],station.inventory,proj4string=sp::CRS("+proj=longlat +datum=WGS84"))
+
+  if(!is.null(elements)){
+    stations.sp <- stations.sp[stations.sp$ELEMENT %in% toupper(elements),]
+  }
+
   if(!is.null(template)){
     stations.sp <- stations.sp[!is.na(sp::over(stations.sp,sp::spTransform(template,sp::CRS(raster::projection(stations.sp))))),]
   }
