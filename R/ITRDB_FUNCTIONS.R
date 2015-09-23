@@ -47,6 +47,7 @@
 #' The directory will be created if missing. Defaults to "./EXTRACTIONS/ITRDB/".
 #' @param force.redo If an extraction already exists, should a new one be created? Defaults to FALSE.
 #' @return A named list containing the "metadata", "widths", and "depths" data. 
+#' @export
 get_itrdb <- function(template=NULL, label=NULL, recon.years=NULL, calib.years=NULL, species=NULL, measurement.type=NULL, chronology.type=NULL, makeSpatial=F, raw.dir="./RAW/ITRDB/", extraction.dir="./EXTRACTIONS/ITRDB/", force.redo=FALSE){  
   dir.create(raw.dir, showWarnings = FALSE, recursive = TRUE)
   
@@ -143,6 +144,7 @@ get_itrdb <- function(template=NULL, label=NULL, recon.years=NULL, calib.years=N
 #' The directory will be created if missing. Defaults to "./RAW/ITRDB/".
 #' @param force.redo If a download already exists, should a new one be created? Defaults to FALSE.
 #' @return A data.table containing all of the ITRDB data. 
+#' @export
 download_itrdb <- function(raw.dir="./RAW/ITRDB/", force.redo=FALSE){
   dir.create(raw.dir, showWarnings = FALSE, recursive = TRUE)
   
@@ -186,9 +188,10 @@ download_itrdb <- function(raw.dir="./RAW/ITRDB/", force.redo=FALSE){
       unlink(tmpdir, recursive = TRUE)
       
       if(sum(sapply(records, is.null))>0){
-        message(sum(sapply(records, is.null))," files couldn't be extracted:")
+        message(sum(sapply(records, is.null))," file(s) couldn't be extracted:")
         for(file in basename(crns)[sapply(records, is.null)])
           message(file)
+        message("File(s) likely malformed!")
       }
       
       records <- unlist(records,recursive=F)
@@ -235,6 +238,7 @@ download_itrdb <- function(raw.dir="./RAW/ITRDB/", force.redo=FALSE){
 #' 
 #' @param file A character string path pointing to a \code{*.crn} file to be read.
 #' @return A list containing the metadata and chronology.
+#' @export
 read_crn <- function(file){
   id <- toupper(gsub(".crn","",basename(file)))
   
@@ -321,6 +325,7 @@ read_crn <- function(file){
 #' @param file A character string path pointing to a \code{*.crn} file to be read.
 #' @param SCHWEINGRUBER Is the file in the Schweingruber-type Tucson format?
 #' @return A data.frame containing the metadata.
+#' @export
 read_crn_metadata <- function(file,SCHWEINGRUBER){
   id <- toupper(gsub("\\.crn","",basename(file)))
   id <- gsub("_CRNS","",id)
@@ -496,6 +501,7 @@ read_crn_metadata <- function(file,SCHWEINGRUBER){
 #' @param file A character string path pointing to a \code{*.crn} file to be read.
 #' @param SCHWEINGRUBER Is the file in the Schweingruber-type Tucson format?
 #' @return A data.frame containing the data, or if \code{SCHWEINGRUBER==T}, a list containing four types of data.
+#' @export
 read_crn_data <- function(file,SCHWEINGRUBER){  
   if(!SCHWEINGRUBER){
     years <- as.character(utils::read.fwf(file,c(6,3,13,18,6,5,6,9,6,5),skip=1,n=1,colClasses = "character", strip.white=T, stringsAsFactors=F))[9:10]
@@ -642,7 +648,7 @@ read_crn_data <- function(file,SCHWEINGRUBER){
     widths <- c(6, digits.year, rep(c(4, 3), 10))
     starts <- c(1,cumsum(widths)+1)
     stops <- cumsum(widths)
-    starts <- head(starts,n=length(stops))
+    starts <- utils::head(starts,n=length(stops))
     dat <- lapply(raw.data,function(this.raw.data){
       dat <- as.data.frame(
         matrix(
