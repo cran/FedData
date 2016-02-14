@@ -2,12 +2,13 @@ Package: FedData
 Type: Package
 Title: Functions to Automate Downloading Geospatial Data Available from
         Several Federated Data Sources
-Version: 2.0.4
-Date: 2016-01-27
-Author: R. Kyle Bocinsky [aut, cre], Dylan Beaudette [ctb]
+Version: 2.0.5
+Date: 2016-02-14
+Author: R. Kyle Bocinsky [aut, cre], Dylan Beaudette [ctb], Scott Chamberlain [ctb]
 Authors@R: c(person(given = c("R.", "Kyle"), family = "Bocinsky",
     role = c("aut", "cre"), email = "bocinsky@gmail.com"),
-    person(given = c("Dylan"), family = "Beaudette", role = "ctb"))
+    person(given = c("Dylan"), family = "Beaudette", role = "ctb"),
+    person(given = c("Scott"), family = "Chamberlain", role = "ctb"))
 Maintainer: R. Kyle Bocinsky <bocinsky@gmail.com>
 Description: Functions to automate downloading geospatial data available from
     several federated data sources (mainly sources maintained by the US Federal
@@ -23,12 +24,12 @@ Description: Functions to automate downloading geospatial data available from
     Atlas (US), Natural Earth, PRISM, and WorldClim.
 License: MIT + file LICENSE
 Depends: R (>= 3.2.0), sp
-Imports: data.table, devtools, soilDB, igraph, RCurl, methods, rgdal,
+Imports: data.table, devtools, soilDB, igraph, curl, methods, rgdal,
         raster, Hmisc
 Suggests: SSOAP, XMLSchema
 Repository: CRAN
 Additional_repositories: http://www.omegahat.org/R
 NeedsCompilation: no
 RoxygenNote: 5.0.1
-Packaged: 2016-01-27 19:04:02 UTC; bocinsky
-Date/Publication: 2016-01-28 10:09:19
+Packaged: 2016-02-14 19:47:20 UTC; bocinsky
+Date/Publication: 2016-02-14 23:23:42
