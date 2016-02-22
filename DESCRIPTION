@@ -2,8 +2,8 @@ Package: FedData
 Type: Package
 Title: Functions to Automate Downloading Geospatial Data Available from
         Several Federated Data Sources
-Version: 2.0.5
-Date: 2016-02-14
+Version: 2.0.6
+Date: 2016-02-21
 Author: R. Kyle Bocinsky [aut, cre], Dylan Beaudette [ctb], Scott Chamberlain [ctb]
 Authors@R: c(person(given = c("R.", "Kyle"), family = "Bocinsky",
     role = c("aut", "cre"), email = "bocinsky@gmail.com"),
@@ -26,10 +26,9 @@ License: MIT + file LICENSE
 Depends: R (>= 3.2.0), sp
 Imports: data.table, devtools, soilDB, igraph, curl, methods, rgdal,
         raster, Hmisc
-Suggests: SSOAP, XMLSchema
 Repository: CRAN
 Additional_repositories: http://www.omegahat.org/R
 NeedsCompilation: no
 RoxygenNote: 5.0.1
-Packaged: 2016-02-14 19:47:20 UTC; bocinsky
-Date/Publication: 2016-02-14 23:23:42
+Packaged: 2016-02-22 00:10:18 UTC; bocinsky
+Date/Publication: 2016-02-22 01:20:21
