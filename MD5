@@ -1,4 +1,4 @@
-3d7a0114aefd2507c1d83708d3be37a7 *DESCRIPTION
+53ddc499b0abb7425e3a66a6a558c8c6 *DESCRIPTION
 ecc0820632db0eba89ccef1d54937310 *LICENSE
 2a30f1262710bfa23330336e6dc1aecb *NAMESPACE
 6f34c005a661e4b16e64f3d1208752de *R/GHCN_FUNCTIONS.R
@@ -10,7 +10,7 @@ ecc0820632db0eba89ccef1d54937310 *LICENSE
 0d72aefadcf65e98d2edd65083352bae *R/sysdata.rda
 8d07fd2ae85513f16d58012dffb5ebeb *README.md
 d3f78531b3a3f4e87eed6a4ad574ef4e *inst/CITATION
-c15cb77c173998e0100e3908c9d7613f *inst/FedDataTester.R
+5db39e42fd6614b74d0208dc79d96a4f *inst/FedDataTester.R
 c607bad234da9ee7922931d342fdb336 *inst/img/GHCN_prcp.png
 8c0efb1e565081985425016b65433274 *inst/img/GHCN_temp.png
 6af99f2d9830bfebd0461e28b633fc28 *inst/img/ITRDB.png
@@ -18,7 +18,7 @@ d287d908fbdddac21f318c916c889f8e *inst/img/NED.png
 2cc18aee1d24c16e16899902ccecf42c *inst/img/NHD.png
 398dfb600122dcad759664f28c744279 *inst/img/SSURGO_VEP.png
 7c3761c1aee8f8f97c1160473d231095 *inst/img/SSURGO_areas.png
-b9ed9d55d077b960ca82f96af815a660 *man/FedData-package.Rd
+5bdf3d458df5199abc82713a5c2b77fb *man/FedData-package.Rd
 cf270027da55e85faaa9bab2eccb9c8a *man/download_data.Rd
 b5e9619dc95537676efe890abbcc2b39 *man/download_ghcn_daily_station.Rd
 a5e42e156569e2d4601557c1fb1efe6f *man/download_huc4.Rd
