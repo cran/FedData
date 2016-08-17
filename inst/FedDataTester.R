@@ -46,8 +46,7 @@ legend('bottomleft', pch=1, legend="GHCN Temperature Records")
 
 # Get the NHD (USA ONLY)
 NHD <- get_nhd(template=vepPolygon, 
-               label="VEPIIN",
-               force.redo = T)
+               label="VEPIIN")
 # Plot the NED again
 raster::plot(NED)
 # Plot the NHD data
