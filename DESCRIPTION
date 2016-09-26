@@ -2,8 +2,8 @@ Package: FedData
 Type: Package
 Title: Functions to Automate Downloading Geospatial Data Available from
         Several Federated Data Sources
-Version: 2.0.10
-Date: 2016-09-08
+Version: 2.2.0
+Date: 2016-09-26
 Author: R. Kyle Bocinsky [aut, cre], Dylan Beaudette [ctb], Scott Chamberlain [ctb]
 Authors@R: c(person(given = c("R.", "Kyle"), family = "Bocinsky",
     role = c("aut", "cre"), email = "bocinsky@gmail.com"),
@@ -23,12 +23,12 @@ Description: Functions to automate downloading geospatial data available from
     ETOPO30, SRTM), global soils (HWSD), MODIS satellite data products, the National
     Atlas (US), Natural Earth, PRISM, and WorldClim.
 License: MIT + file LICENSE
-Depends: R (>= 3.2.0), sp
+Depends: R (>= 3.2.0), sp, magrittr
 Imports: data.table, devtools, soilDB, igraph, curl, methods, rgdal,
-        raster, Hmisc, rgeos
+        raster, Hmisc, rgeos, readr, dplyr
 Repository: CRAN
 NeedsCompilation: no
 RoxygenNote: 5.0.1
 Suggests: testthat
-Packaged: 2016-09-08 19:36:30 UTC; bocinsky
-Date/Publication: 2016-09-09 00:30:12
+Packaged: 2016-09-26 18:26:13 UTC; bocinsky
+Date/Publication: 2016-09-26 21:27:04

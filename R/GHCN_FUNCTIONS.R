@@ -1,3 +1,5 @@
+# globalVariables(c(".", "ELEMENT","YEAR","MONTH","LONGITUDE","LATITUDE"))
+
 #' Download and crop the Global Historical Climate Network-Daily data.
 #'
 #' \code{get_ghcn_daily} returns a named list of length 2: 
@@ -150,6 +152,7 @@
 #' 07 = Ash, dust, sand, or other blowing obstruction\cr
 #' 18 = Snow or ice crystals\cr
 #' 20 = Rain or snow shower
+#' @param years A character string indicating which years to get.
 #' @param raw.dir A character string indicating where raw downloaded files should be put.
 #' The directory will be created if missing. Defaults to "./RAW/GHCN/".
 #' @param extraction.dir A character string indicating where the extracted and cropped GHCN shapefiles should be put.
@@ -192,7 +195,7 @@
 #' plot(GHCN.temp$spatial, pch=1, add=T)
 #' legend('bottomleft', pch=1, legend="GHCN Temperature Records")
 #' }
-get_ghcn_daily <- function(template=NULL, label=NULL, elements=NULL, raw.dir="./RAW/GHCN/", extraction.dir="./EXTRACTIONS/GHCN/", standardize=F, force.redo=F){
+get_ghcn_daily <- function(template=NULL, label=NULL, elements=NULL, years = NULL, raw.dir="./RAW/GHCN/", extraction.dir="./EXTRACTIONS/GHCN/", standardize=F, force.redo=F){
   dir.create(raw.dir, showWarnings = FALSE, recursive = TRUE)
   
   if(is.null(template) & is.null(label)){
@@ -227,6 +230,10 @@ get_ghcn_daily <- function(template=NULL, label=NULL, elements=NULL, raw.dir="./
   }
   elements <- unique(stations.sp$ELEMENT)
   
+  if(!is.null(years)){
+    stations.sp <- stations.sp[stations.sp@data[,"YEAR_START"] <= min(years) & stations.sp@data[,"YEAR_END"] >= max(years),]
+  }
+  
   if(standardize){
     stations.sp.splits <- split(as.character(stations.sp$ELEMENT),f=stations.sp$ID, drop=T)
     stations.sp.splits.all <- sapply(stations.sp.splits,function(x){all(sapply(toupper(elements),function(y){y %in% x}))})
@@ -234,7 +241,7 @@ get_ghcn_daily <- function(template=NULL, label=NULL, elements=NULL, raw.dir="./
   }
   
   # stations.sp <- stations.sp[,c("ID","ELEMENT","YEAR_START","YEAR_END")]
-  stations.sp <- stations.sp[!duplicated(stations.sp@data[,c("ID","LATITUDE","LONGITUDE")]),c("ID")]
+  stations.sp <- stations.sp[!duplicated(stations.sp@data[,c("ID","LATITUDE","LONGITUDE")]),c("ID", "NAME")]
   
   if(!force.redo){
     daily <- tryCatch(lapply(elements,function(element){readRDS(paste(tables.dir,"/",element,".Rds",sep=''))}), warning = function(w){return(NULL)})
@@ -249,17 +256,20 @@ get_ghcn_daily <- function(template=NULL, label=NULL, elements=NULL, raw.dir="./
       names(daily) <- as.character(stations.sp$ID)
       daily <- daily[!sapply(daily,is.null)]
       # Make sure station names and elements are the same
-      if(setequal(names(daily),stations.sp$ID) & all(sapply(daily,function(dat){setequal(names(dat),elements)}))){
+      # if(setequal(names(daily),stations.sp$ID) & all(sapply(daily,function(dat){setequal(names(dat),elements)}))){
         return(list(spatial=stations.sp,tabular=daily))
-      }
+      # }
     }
   }
   
   daily <- lapply(stations.sp$ID,function(station){
     message("(Down)Loading GHCN station data for station ",as.character(station))
-    return(get_ghcn_daily_station(ID=station, elements=elements, raw.dir=raw.dir, standardize=standardize, force.redo=force.redo))
+    tryCatch(station <- get_ghcn_daily_station(ID=station, elements=elements, raw.dir=raw.dir, standardize=standardize, force.redo=force.redo), error = function(e){message("Error (down)Loading GHCN station data for station ",as.character(station)); return(NULL)})
+    return(station)
   })
   names(daily) <- stations.sp$ID
+  
+  daily <- daily[(lapply(daily,names) %>% sapply(length) <= length(elements))]
   
   daily.split <- lapply(as.character(elements),function(element){
     lapply(daily,'[[',element)
@@ -445,49 +455,61 @@ download_ghcn_daily_station <- function(ID, raw.dir, force.redo=F){
 #' @param standardize Select only common year/month/day? Defaults to FALSE.
 #' @param force.redo If this weather station has been downloaded before, should it be updated? Defaults to FALSE.
 #' @return A named list of \code{\link{data.frame}s}, one for each \code{elements}.
+#' @import magrittr
 #' @export
 #' @keywords internal
 get_ghcn_daily_station <- function(ID, elements=NULL, raw.dir, standardize=F, force.redo=F){
   
-  file <- download_ghcn_daily_station(ID=ID, raw.dir=paste(raw.dir,"/DAILY/",sep=''), force.redo=force.redo)
+  file <- download_ghcn_daily_station(ID = ID, 
+                                      raw.dir = paste(raw.dir,"/DAILY/",sep=''), 
+                                      force.redo = force.redo)
   
   # GHCN files are fixed-width. The numbers here refer to those column widths.
-  daily <- utils::read.fwf(file,c(11,4,2,4,rep(c(5,1,1,1),31)), stringsAsFactors=F)
-  names(daily)[1:4] <- c("STATION","YEAR","MONTH","ELEMENT")
+  daily <- readr::read_fwf(file,
+                           col_positions = readr::fwf_positions(start = c(1,12,16,18,seq(22,262,8)),
+                                                                end = c(11,15,17,21,seq(26,266,8)),
+                                                                col_names = c("STATION","YEAR","MONTH","ELEMENT",paste0("D",1:31))
+                           ),
+                           col_types = paste0(c("cicc",rep("i",31)),collapse = "")
+  )
   
   # If the user didn't specify target elements, get them all.
-  if(!is.null(elements)){
-    daily <- daily[daily$ELEMENT %in% toupper(elements),]
-    missing.elements <- setdiff(toupper(elements),unique(daily$ELEMENT))
-    if(length(missing.elements)>0) warning("Elements not available: ",paste(missing.elements,collapse = ", "))
+  if(is.null(elements)){
+    elements <- unique(daily$ELEMENT)
   }
-  elements <- unique(daily$ELEMENT)
+  elements <- toupper(elements)
+  daily %<>% dplyr::filter_(~ELEMENT %in% elements)
+  missing.elements <- setdiff(toupper(elements),unique(daily$ELEMENT))
+  if(length(missing.elements)>0) warning("Elements not available: ",paste(missing.elements,collapse = ", "))
   
-  
-  daily <- daily[daily$ELEMENT %in% toupper(elements),c(2:4,seq(5,125,4))]
-  daily[daily==-9999] <- NA
-  names(daily) <- c("YEAR","MONTH","ELEMENT",paste("D",1:31,sep=''))
+  daily %<>% dplyr::mutate_all(dplyr::funs_(quote(ifelse(. == -9999,NA,.))))
   
   ## Separate by element
   out.list <- lapply(elements, function(element){
-    return(daily[daily$ELEMENT==toupper(element),-3])
+    return(
+      daily %>%
+        dplyr::filter_(~ELEMENT == element) %>%
+        dplyr::select_(quote(-ELEMENT))
+    )
   })
   
   ## If standardize, select only common year/month/day, and make NA if both not present
   if(standardize){
     yearMonths <- lapply(out.list, function(element){
-      element <- element[order(element$YEAR,element$MONTH),]
-      return(paste("Y",element[,c("YEAR")],"M",element[,c("MONTH")],sep=''))
+      element %<>%
+        dplyr::arrange_(~YEAR,~MONTH)
+      return(paste("Y",element[["YEAR"]],"M",element[["MONTH"]],sep=''))
     })
     
     all.yearMonths <- Reduce(intersect,yearMonths)
     
     out.list <- lapply(out.list, function(element){
-      element.yearMonths <- paste("Y",element[,c("YEAR")],"M",element[,c("MONTH")],sep='')
-      return(element[match(all.yearMonths,element.yearMonths),])
+      element.yearMonths <- paste("Y",element[["YEAR"]],"M",element[["MONTH"]],sep='')
+      return(
+        element %>%
+          dplyr::filter(element.yearMonths %in% all.yearMonths)
+      )
     })
-    
-    
   }
   
   names(out.list) <- elements
@@ -511,6 +533,7 @@ get_ghcn_daily_station <- function(ID, elements=NULL, raw.dir, standardize=F, fo
 #' The directory will be created if missing.
 #' @return A \code{SpatialPolygonsDataFrame} of the GHCN stations within
 #' the specified \code{template}
+#' @import magrittr
 #' @export
 #' @keywords internal
 get_ghcn_inventory <- function(template=NULL, elements=NULL, raw.dir){
@@ -522,12 +545,31 @@ get_ghcn_inventory <- function(template=NULL, elements=NULL, raw.dir){
   destdir <- raw.dir
   download_data(url=url, destdir=destdir)
   
+  url <- "ftp://ftp.ncdc.noaa.gov/pub/data/ghcn/daily/ghcnd-stations.txt"
+  destdir <- raw.dir
+  download_data(url=url, destdir=destdir)
+  
   # GHCN files are fixed-width. The numbers here refer to those column widths.
-  station.inventory <- utils::read.fwf(paste(raw.dir,"ghcnd-inventory.txt",sep=''),c(11,1,8,1,9,1,4,1,4,1,4), stringsAsFactors=F)[,seq(1,11,2)]
-  names(station.inventory) <- c("ID","LATITUDE","LONGITUDE","ELEMENT","YEAR_START","YEAR_END")
+  station.inventory <- readr::read_fwf(paste(raw.dir,"ghcnd-inventory.txt",sep=''),
+                                       readr::fwf_positions(start = c(1,13,22,32,37,42),
+                                                            end = c(11,20,30,35,40,45),
+                                                            col_names = c("ID","LATITUDE","LONGITUDE","ELEMENT","YEAR_START","YEAR_END")),
+                                       col_types = "cddcii")
+  
+  stations <- readr::read_fwf(paste(raw.dir,"ghcnd-stations.txt",sep=''),
+                              readr::fwf_positions(start = c(1,13,22,32,42),
+                                                   end = c(11,20,30,38,72),
+                                                   col_names = c("ID","LATITUDE","LONGITUDE","ELEVATION","NAME")),
+                              col_types = "cdddc")
   
   # Convert to SPDF
-  stations.sp <- sp::SpatialPointsDataFrame(coords=station.inventory[,c("LONGITUDE","LATITUDE")],station.inventory,proj4string=sp::CRS("+proj=longlat +datum=WGS84"))
+  stations.sp <- sp::SpatialPointsDataFrame(coords = station.inventory %>% 
+                                              dplyr::select_(~LONGITUDE,~LATITUDE),
+                                            data = station.inventory %>% 
+                                              dplyr::left_join(stations %>% dplyr::select_("ID","NAME"), by="ID") %>%
+                                              dplyr::select_("ID","NAME","LATITUDE","LONGITUDE","ELEMENT","YEAR_START","YEAR_END") %>%
+                                              as.data.frame(),
+                                            proj4string = sp::CRS("+proj=longlat +datum=WGS84"))
   
   if(!is.null(elements)){
     stations.sp <- stations.sp[stations.sp$ELEMENT %in% toupper(elements),]
@@ -563,7 +605,7 @@ station_to_data_frame <- function(station.data){
     X <- station.data[[i]]
     
     # Get just the climate info
-    annual.records <- as.matrix(X[,3:33])
+    annual.records <- as.matrix(X[,4:34])
     
     # Get the number of days per month in the records
     n.days <- Hmisc::monthDays(as.Date(paste(X$YEAR,X$MONTH,'01',sep='-')))
@@ -572,7 +614,7 @@ station_to_data_frame <- function(station.data){
     annual.records.unwrapped <- unwrap_rows(annual.records,n.days)
     
     dates <- as.Date(unlist(mapply(FUN = function(days,dates){paste(dates,days,sep="-")}, sapply(n.days,function(x){1:x}), paste(X$YEAR,X$MONTH,sep='-'))))
-
+    
     annual.records.unwrapped <- data.table::data.table(dates,annual.records.unwrapped)
     names(annual.records.unwrapped) <- c("DATE",names(station.data)[i])
     data.table::setkey(annual.records.unwrapped,"DATE")
