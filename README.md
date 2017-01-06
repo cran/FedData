@@ -14,11 +14,11 @@ FedData
 * The [Daymet](https://daymet.ornl.gov/) gridded estimates of daily weather parameters for North America, version 3, available from the Oak Ridge National Laboratory's Distributed Active Archive Center (DAAC), and
 * The [International Tree Ring Data Bank (ITRDB)](http://www.ncdc.noaa.gov/data-access/paleoclimatology-data/datasets/tree-ring), coordinated by National Climatic Data Center at NOAA.
 
-Additional data sources are in the works, including global DEM resources ([ETOPO1](https://www.ngdc.noaa.gov/mgg/global/global.html), [STRM](http://www2.jpl.nasa.gov/srtm/)), global soils ([HWSD](http://www.fao.org/soils-portal/soil-survey/soil-maps-and-databases/harmonized-world-soil-database-v12/en/)), [MODIS](https://modis.gsfc.nasa.gov/) satellite data products, the [National Atlas](http://nationalmap.gov/small_scale/) (US only), [Natural Earth](http://www.naturalearthdata.com/), and [WorldClim](http://www.worldclim.org/).
+Additional data sources are in the works.
 
 This package is designed with the large-scale geographic information system (GIS) use-case in mind: cases where the use of dynamic web-services is impractical due to the scale (spatial and/or temporal) of analysis. It functions primarily as a means of downloading tiled or otherwise spatially-defined datasets; additionally, it can preprocess those datasets by extracting data within an area of interest (AoI), defined spatially. It relies heavily on the [**sp**](https://cran.r-project.org/package=sp), [**raster**](https://cran.r-project.org/package=raster), and [**rgdal**](https://cran.r-project.org/package=rgdal) packages.
 
-This package has been built and tested on a source (Homebrew) install of *R* on Mac OS 10.12 (Sierra), and has been successfully run on Ubuntu 16.04.1 LTS and binary installs of *R* on Mac OS 10.12 and Windows 10.
+This package has been built and tested on a source (Homebrew) install of *R* on macOS 10.12 (Sierra), and has been successfully run on Ubuntu 14.04.5 LTS (Trusty), Ubuntu 16.04.1 LTS (Xenial) and binary installs of *R* on Mac OS 10.12 and Windows 10.
 
 ### Development
 + [Kyle Bocinsky](http://bocinsky.io) - Crow Canyon Archaeological Center, Cortez, CO
@@ -28,18 +28,33 @@ This package has been built and tested on a source (Homebrew) install of *R* on 
 + [Scott Chamberlain](http://scottchamberlain.info/) - ROpenSci and Museum of Paleontology at UC Berkeley
 
 ### Install `FedData`
-+ CRAN:
-```r
-install.packages('FedData')
-```
++ From CRAN:
+    ```r
+    install.packages('FedData')
+    ```
 
 + Development version from GitHub:
-```r
-install.packages("devtools")
-library(devtools)
-install_github("bocinsky/FedData")
-library(FedData)
-```
+    ```r
+    install.packages("devtools")
+    devtools::install_github("bocinsky/FedData")
+    library(FedData)
+    ```
++ Linux (Ubuntu 14.04.5 or 16.04.1):
+
+    First, in terminal:
+    ```r
+    sudo add-apt-repository ppa:ubuntugis/ppa -y
+    sudo apt-get update -q
+    sudo apt-get install libssl-dev libcurl4-openssl-dev netcdf-bin libnetcdf-dev gdal-bin libgdal-dev
+    ```
+    Then, in R:
+    ```r
+    update.packages("survival")
+    install.packages("devtools")
+    devtools::install_github("bocinsky/FedData")
+    library(FedData)
+    ```
+
 
 ### Demonstration
 This demo script is available in the `/inst` folder at the location of the installed package.

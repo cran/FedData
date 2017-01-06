@@ -202,7 +202,7 @@ get_ssurgo_inventory <- function(template=NULL, raw.dir){
     if(identical(bounds[2,1],bounds[2,2])) bounds[2,2] <- bounds[2,2] + .0001
     bbox.text <- paste(bounds, collapse = ",")
     
-    url <- paste("http://sdmdataaccess.nrcs.usda.gov/Spatial/SDMNAD83Geographic.wfs?Service=WFS&Version=1.0.0&Request=GetFeature&Typename=SurveyAreaPoly&BBOX=", bbox.text, sep = "")
+    url <- paste("https://sdmdataaccess.nrcs.usda.gov/Spatial/SDMNAD83Geographic.wfs?Service=WFS&Version=1.0.0&Request=GetFeature&Typename=SurveyAreaPoly&BBOX=", bbox.text, sep = "")
     
     temp.file <- paste0(tempdir(),"/soils.gml")
     
@@ -305,7 +305,11 @@ get_ssurgo_study_area <- function(template=NULL, area, date, raw.dir){
   utils::unzip(file,exdir=tmpdir)
   
   # Get spatial data
-  mapunits <- rgdal::readOGR(paste(tmpdir,'/',area,'/spatial',sep=''), layer=paste("soilmu_a_",tolower(area),sep=''), verbose=F)
+  if(.Platform$OS.type == "windows") {
+    suppressWarnings(mapunits <- rgdal::readOGR(paste0(tmpdir,"/",area,"/spatial"), layer=paste0("soilmu_a_",tolower(area)), verbose=F))
+  } else {
+    suppressWarnings(mapunits <- rgdal::readOGR(tmpdir, layer=paste0("soilmu_a_",tolower(area)), verbose=F))
+  }
   
   # Crop to study area
   if(!is.null(template) & !is.character(template)){
@@ -320,12 +324,21 @@ get_ssurgo_study_area <- function(template=NULL, area, date, raw.dir){
   mapunits <- sp::spChFIDs(mapunits, as.character(paste(area,'_',row.names(mapunits@data),sep='')))
   
   # Read in all tables
-  files <- list.files(paste(tmpdir,'/',area,'/tabular/',sep=''))
-  tablesData <- lapply(files, function(file){
-    tryCatch(return(utils::read.delim(paste(tmpdir,'/',area,'/tabular/',file,sep=''), header=F,sep="|", stringsAsFactors=F)), error = function(e){return(NULL)})
-  })
-  names(tablesData) <- files
-  tablesData <- tablesData[!sapply(tablesData,is.null)]
+  if(.Platform$OS.type == "windows") {
+    files <- list.files(paste0(tmpdir,"/",area,"/tabular"), full.names = T)
+    tablesData <- lapply(files, function(file){
+      tryCatch(return(utils::read.delim(file, header=F,sep="|", stringsAsFactors=F)), error = function(e){return(NULL)})
+    })
+    names(tablesData) <- basename(files)
+    tablesData <- tablesData[!sapply(tablesData,is.null)]
+  } else {
+    files <- list.files(tmpdir, full.names = T, pattern = "tabular")
+    tablesData <- lapply(files, function(file){
+      tryCatch(return(utils::read.delim(file, header=F,sep="|", stringsAsFactors=F)), error = function(e){return(NULL)})
+    })
+    names(tablesData) <- gsub(paste0(area,"\\\\tabular\\\\"),"",basename(files))
+    tablesData <- tablesData[!sapply(tablesData,is.null)]
+  }
   
   # tablesHeaders <- FedData::tablesHeaders
   
