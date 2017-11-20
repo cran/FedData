@@ -13,8 +13,8 @@ Description: Functions to automate downloading geospatial data available from
     Data Center at NOAA; the Daymet gridded estimates of daily weather parameters 
     for North America, version 3, available from the Oak Ridge National Laboratory's
     Distributed Active Archive Center (DAAC); and the International Tree Ring Data Bank.
-Version: 2.4.6
-Date: 2017-8-11
+Version: 2.4.7
+Date: 2017-11-19
 Author: R. Kyle Bocinsky [aut, cre], Dylan Beaudette [ctb], Scott Chamberlain [ctb]
 Authors@R: c(person(given = c("R.", "Kyle"), family = "Bocinsky",
     role = c("aut", "cre"), email = "bocinsky@gmail.com"),
@@ -32,5 +32,5 @@ Repository: CRAN
 NeedsCompilation: no
 RoxygenNote: 6.0.1
 Suggests: testthat, covr, roxygen2
-Packaged: 2017-08-18 16:39:08 UTC; bocinsky
-Date/Publication: 2017-08-18 17:01:20 UTC
+Packaged: 2017-11-20 21:27:56 UTC; bocinsky
+Date/Publication: 2017-11-20 21:36:18 UTC

@@ -1,3 +1,8 @@
+# FedData 2.4.7
+* SSURGO fixed test where supplying an unavailable survey area now returns NULL instead of an error.
+* SSURGO zip directory encoding changes as of late October 2017 forced changes in the FedData:::get_ssurgo_study_area function.
+* Fixed issue where NHD template wouldn't load because they added a jpeg preview to the directory.
+
 # FedData 2.4.6
 * DAYMET functions now do *not* operate in parallel. This was breaking the download functions.
 * Final update for version 2 of FedData.
