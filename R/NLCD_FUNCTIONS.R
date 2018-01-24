@@ -11,9 +11,9 @@
 #' @param dataset A character string representing type of the NLCD product.
 #' Acceptable values are landcover' (default), 'impervious', and 'canopy'.
 #' @param raw.dir A character string indicating where raw downloaded files should be put.
-#' The directory will be created if missing. Defaults to './RAW/NED/'.
+#' The directory will be created if missing. Defaults to './RAW/NLCD/'.
 #' @param extraction.dir A character string indicating where the extracted and cropped DEM should be put.
-#' The directory will be created if missing. Defaults to './EXTRACTIONS/NED/'.
+#' The directory will be created if missing. Defaults to './EXTRACTIONS/NLCD/'.
 #' @param raster.options a vector of options for raster::writeRaster. 
 #' @param force.redo If an extraction for this template and label already exists, should a new one be created?
 #' @return A \code{RasterLayer} DEM cropped to the extent of the template.
@@ -60,7 +60,9 @@ get_nlcd <- function(template,
   template <- template %<>%
     polygon_from_extent()
   
-  data(nlcd_tiles, envir = environment())
+  # data(nlcd_tiles, package = "FedData")
+  
+  nlcd_tiles <- FedData::nlcd_tiles
   
   template.latlon <- template %>%
     sp::spTransform(raster::projection(nlcd_tiles))
@@ -92,7 +94,7 @@ get_nlcd <- function(template,
   
   # Mosaic all tiles
   if (length(tiles) > 1) {
-    message("Mosaicking NED tiles.")
+    message("Mosaicking NLCD tiles.")
     utils::flush.console()
     
     # tiles$fun <- mean
@@ -125,15 +127,18 @@ get_nlcd <- function(template,
   
   # Save the PAM attributes file
   if(dataset == "landcover"){
-    data(nlcd_landcover_pam, envir = environment())
+    # data(nlcd_landcover_pam, package = "FedData")
+    nlcd_landcover_pam <- FedData::nlcd_landcover_pam
     readr::write_lines(nlcd_landcover_pam,
                        paste0(extraction.dir, "/", label, "_NLCD_", year,"_",dataset, ".tif.aux.xml"))
   }else if(dataset == "canopy"){
-    data(nlcd_canopy_pam, envir = environment())
+    # data(nlcd_canopy_pam, package = "FedData")
+    nlcd_canopy_pam <- FedData::nlcd_canopy_pam
     readr::write_lines(nlcd_canopy_pam,
                        paste0(extraction.dir, "/", label, "_NLCD_", year,"_",dataset, ".tif.aux.xml"))
   }else if(dataset == "impervious"){
-    data(nlcd_impervious_pam, envir = environment())
+    # data(nlcd_impervious_pam, package = "FedData")
+    nlcd_impervious_pam <- FedData::nlcd_impervious_pam
     readr::write_lines(nlcd_impervious_pam,
                        paste0(extraction.dir, "/", label, "_NLCD_", year,"_",dataset, ".tif.aux.xml"))
   }
@@ -266,26 +271,22 @@ get_nlcd_tile <- function(template = NULL,
 #' \describe{
 #'   \item{Name}{the name of the tile}
 #' }
-#' @keywords internal
 "nlcd_tiles"
 
 #' The NLCD landcover PAM attributes.
 #'
 #' A dataset containing the PAM attributes.
 #'
-#' @keywords internal
 "nlcd_landcover_pam"
 
 #' The NLCD canopy PAM attributes.
 #'
 #' A dataset containing the PAM attributes.
 #'
-#' @keywords internal
 "nlcd_canopy_pam"
 
 #' The NLCD impervious PAM attributes.
 #'
 #' A dataset containing the PAM attributes.
 #'
-#' @keywords internal
 "nlcd_impervious_pam"

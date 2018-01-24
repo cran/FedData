@@ -21,7 +21,7 @@ sources (mainly sources maintained by the US Federal government).
 FedData 3 will be released in the coming months, but some code built on
 FedData 2 will not be compatible with FedData 3.**
 
-Currently, the package enables extraction from six datasets:
+Currently, the package enables extraction from seven datasets:
 
   - The [National Elevation Dataset (NED)](http://ned.usgs.gov) digital
     elevation models (1 and 1/3 arc-second; USGS)
@@ -29,19 +29,19 @@ Currently, the package enables extraction from six datasets:
   - The [Soil Survey Geographic (SSURGO)
     database](http://websoilsurvey.sc.egov.usda.gov/) from the National
     Cooperative Soil Survey (NCSS), which is led by the Natural
-    Resources Conservation Service (NRCS) under the USDA,
+    Resources Conservation Service (NRCS) under the USDA
   - The [Global Historical Climatology Network
     (GHCN)](http://www.ncdc.noaa.gov/data-access/land-based-station-data/land-based-datasets/global-historical-climatology-network-ghcn),
-    coordinated by National Climatic Data Center at NOAA,
+    coordinated by National Climatic Data Center at NOAA
   - The [Daymet](https://daymet.ornl.gov/) gridded estimates of daily
     weather parameters for North America, version 3, available from the
     Oak Ridge National Laboratory’s Distributed Active Archive Center
-    (DAAC), and
+    (DAAC)
   - The [International Tree Ring Data Bank
     (ITRDB)](http://www.ncdc.noaa.gov/data-access/paleoclimatology-data/datasets/tree-ring),
-    coordinated by National Climatic Data Center at NOAA.
+    coordinated by National Climatic Data Center at NOAA
   - The [National Land Cover Database (NLCD)](https://www.mrlc.gov/)
-    from 2011, 2006, and 2001.
+    from 2011, 2006, and 2001
 
 This package is designed with the large-scale geographic information
 system (GIS) use-case in mind: cases where the use of dynamic
@@ -177,6 +177,15 @@ GHCN.temp <- get_ghcn_daily(template = vepPolygon,
                             elements = c('tmin','tmax'), 
                             years = 1980:1985,
                             standardize = TRUE)
+#> Warning: Unknown or uninitialised column: 'ELEMENT'.
+#> Warning in get_ghcn_daily_station(ID = station, elements = elements, years
+#> = years, : Elements not available: TMAX, TMIN
+#> Warning: Unknown or uninitialised column: 'ELEMENT'.
+#> Warning in get_ghcn_daily_station(ID = station, elements = elements, years
+#> = years, : Elements not available: TMAX, TMIN
+#> Warning: Unknown or uninitialised column: 'ELEMENT'.
+#> Warning in get_ghcn_daily_station(ID = station, elements = elements, years
+#> = years, : Elements not available: TMAX, TMIN
 # Plot the NED again
 raster::plot(NED)
 # Plot the spatial locations
@@ -213,8 +222,6 @@ NHD %>%
 # Get the NRCS SSURGO data (USA ONLY)
 SSURGO.VEPIIN <- get_ssurgo(template = vepPolygon, 
                      label = "VEPIIN")
-#> Warning: 1 parsing failure.
-#> row # A tibble: 1 x 5 col     row     col               expected actual expected   <int>   <chr>                  <chr>  <chr> actual 1  1277 slope.r no trailing characters     .5 file # ... with 1 more variables: file <chr>
 # Plot the NED again
 raster::plot(NED)
 # Plot the SSURGO mapunit polygons
@@ -255,6 +262,7 @@ plot(SSURGO.areas.CO675,
 ITRDB <- get_itrdb(template = vepPolygon,
                         label = "VEPIIN",
                         makeSpatial = TRUE)
+#> Warning in eval(jsub, SDenv, parent.frame()): NAs introduced by coercion
 # Plot the NED again
 raster::plot(NED)
 # Map the locations of the tree ring chronologies
@@ -281,7 +289,7 @@ NLCD <- get_nlcd(template = vepPolygon,
 raster::plot(NLCD)
 ```
 
-![](inst/image/README-unnamed-chunk-14-2.png)<!-- -->
+![](inst/image/README-unnamed-chunk-14-1.png)<!-- -->![](inst/image/README-unnamed-chunk-14-2.png)<!-- -->
 
 ``` r
 
@@ -294,7 +302,7 @@ NLCD_canopy <- get_nlcd(template = vepPolygon,
 raster::plot(NLCD_canopy)
 ```
 
-![](inst/image/README-unnamed-chunk-14-4.png)<!-- -->
+![](inst/image/README-unnamed-chunk-14-3.png)<!-- -->![](inst/image/README-unnamed-chunk-14-4.png)<!-- -->
 
 ``` r
 
@@ -306,7 +314,7 @@ NLCD_impervious <- get_nlcd(template = vepPolygon,
 raster::plot(NLCD_impervious)
 ```
 
-![](inst/image/README-unnamed-chunk-14-6.png)<!-- -->
+![](inst/image/README-unnamed-chunk-14-5.png)<!-- -->![](inst/image/README-unnamed-chunk-14-6.png)<!-- -->
 
 -----
 
