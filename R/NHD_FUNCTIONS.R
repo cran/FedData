@@ -66,7 +66,7 @@ get_nhd <- function(template,
   message("(Down)Loading the NHD HUC4 dataset.")
   HUC4 <- get_huc4(template = template, raw.dir = raw.dir)
   
-  area.list <- formatC(HUC4$HUC4, width = 4, format = "d", flag = "0")
+  area.list <- HUC4$HUC4 %>% as.character()
   
   # Get the spatial data for each area
   message("(Down)Loading the NHD subregion data.")
@@ -114,9 +114,10 @@ get_nhd <- function(template,
 #' @keywords internal
 download_huc4 <- function(raw.dir) {
   # url <- 'ftp://rockyftp.cr.usgs.gov/vdelivery/Datasets/Staged/WBD/FileGDB101/WBD_National.zip'
-  url <- "ftp://ftp.igsb.uiowa.edu/gis_library/USA/huc_04.zip"
+  # url <- "ftp://ftp.igsb.uiowa.edu/gis_library/USA/huc_04.zip"
+  url <- "https://github.com/ropensci/FedData/raw/master/data-raw/nhd_huc4.gpkg.zip"
   tryCatch(download_data(url = url, destdir = raw.dir), error = function(e){message("HUC4 download not available. Using local version.")})
-  return(normalizePath(paste(raw.dir, "/huc_04.zip", sep = "")))
+  return(normalizePath(paste(raw.dir, "/nhd_huc4.gpkg.zip", sep = "")))
   # return(normalizePath(paste(raw.dir,'WBD_National.zip',sep='')))
 }
 
@@ -144,9 +145,13 @@ get_huc4 <- function(template = NULL, raw.dir) {
   
   utils::unzip(huc4File, exdir = tmpdir)
   
-  HUC4 <- rgdal::readOGR(tmpdir, layer = "huc_04", verbose = FALSE)
+  HUC4 <- sf::st_read(stringr::str_c(tmpdir,"/data-raw/nhd_huc4.gpkg"),
+                      quiet = TRUE) %>%
+    as("Spatial")
   
-  HUC4@proj4string <- sp::CRS("+proj=utm +zone=15 +datum=NAD83 +ellps=WGS84")
+  # HUC4 <- rgdal::readOGR(tmpdir, layer = "huc_04", verbose = FALSE)
+  # 
+  # HUC4@proj4string <- sp::CRS("+proj=utm +zone=15 +datum=NAD83 +ellps=WGS84")
   
   # Get a list of NHD subregions within the project study area
   if (!is.null(template)) {
