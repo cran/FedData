@@ -14,8 +14,8 @@ Description: Functions to automate downloading geospatial data available from
     for North America, version 3, available from the Oak Ridge National Laboratory's
     Distributed Active Archive Center (DAAC); the International Tree Ring Data Bank; 
     and the National Land Cover Database (NLCD).
-Version: 2.5.5
-Date: 2018-08-08
+Version: 2.5.6
+Date: 2019-01-11
 Author: R. Kyle Bocinsky [aut, cre],
   Dylan Beaudette [ctb],
   Scott Chamberlain [ctb]
@@ -28,13 +28,14 @@ URL: https://github.com/ropensci/FedData
 BugReports: https://github.com/ropensci/FedData/issues
 License: MIT + file LICENSE
 Depends: R (>= 3.2.0), sp
-Imports: data.table, devtools, soilDB, igraph, curl, methods, rgdal,
-        raster, Hmisc, rgeos, readr, lubridate, dplyr, magrittr,
-        foreach, ncdf4, stringr, sf, httr
+Imports: data.table, devtools, igraph, curl, methods, rgdal, raster,
+        Hmisc, rgeos, readr, lubridate, tibble, dplyr, magrittr,
+        foreach, ncdf4, stringr, sf, httr, jsonlite, xml2
 Repository: CRAN
 NeedsCompilation: no
-RoxygenNote: 6.1.0
+RoxygenNote: 6.1.1
 Suggests: testthat, covr, roxygen2
 LazyData: true
-Packaged: 2018-08-09 02:26:08 UTC; bocinsky
-Date/Publication: 2018-08-09 04:10:03 UTC
+Encoding: UTF-8
+Packaged: 2019-01-11 17:33:59 UTC; bocinsky
+Date/Publication: 2019-01-11 17:50:03 UTC
