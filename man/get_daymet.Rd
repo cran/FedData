@@ -2,11 +2,20 @@
 % Please edit documentation in R/DAYMET_FUNCTIONS.R
 \name{get_daymet}
 \alias{get_daymet}
-\title{Download and crop the 1-km DAYMET daily weather dataset.}
+\title{Download and crop the 1-km DAYMET v4 daily weather dataset.}
 \usage{
-get_daymet(template, label, elements = NULL, years = NULL,
-  raw.dir = "./RAW/DAYMET", extraction.dir = paste0("./EXTRACTIONS/",
-  label, "/DAYMET"), force.redo = F)
+get_daymet(
+  template,
+  label,
+  elements = c("dayl", "prcp", "srad", "swe", "tmax", "tmin", "vp"),
+  years = 1980:(lubridate::year(Sys.time()) - 1),
+  region = "na",
+  tempo = "day",
+  extraction.dir = paste0(tempdir(), "/FedData/extractions/daymet/", label, "/"),
+  raster.options = c("COMPRESS=DEFLATE", "ZLEVEL=9", "INTERLEAVE=BAND"),
+  force.redo = F,
+  progress = TRUE
+)
 }
 \arguments{
 \item{template}{A Raster* or Spatial* object to serve
@@ -26,13 +35,25 @@ vp = Water vapor pressure in pascals. Daily average partial pressure of water va
 
 \item{years}{A numeric vector of years to extract.}
 
-\item{raw.dir}{A character string indicating where raw downloaded files should be put.
-The directory will be created if missing. Defaults to './RAW/DAYMET/'.}
+\item{region}{The name of a region. The available regions are:\cr
+na = North America\cr
+hi = Hawaii\cr
+pr = Puerto Rico\cr}
+
+\item{tempo}{The frequency of the data. The available tempos are:\cr
+day = Daily data\cr
+mon = Monthly summary data\cr
+ann = Annual summary data\cr}
 
 \item{extraction.dir}{A character string indicating where the extracted and cropped DEM should be put.
-The directory will be created if missing. Defaults to './EXTRACTIONS/DAYMET/'.}
+Defaults to a temporary directory.}
 
-\item{force.redo}{If an extraction for this template and label already exists, should a new one be created?}
+\item{raster.options}{a vector of options for raster::writeRaster.}
+
+\item{force.redo}{If an extraction for this template and label already exists in extraction.dir,
+should a new one be created?}
+
+\item{progress}{Draw a progress bar when downloading?}
 }
 \value{
 A named list of \code{RasterBrick}s of weather data cropped to the extent of the template.
@@ -43,17 +64,15 @@ template study area.
 }
 \examples{
 \dontrun{
-# Extract data for the Village Ecodynamics Project 'VEPIIN' study area:
-# http://village.anth.wsu.edu
-vepPolygon <- polygon_from_extent(raster::extent(672800,740000,4102000,4170000),
-     proj4string='+proj=utm +datum=NAD83 +zone=12')
 
 # Get the DAYMET (North America only)
 # Returns a list of raster bricks
-DAYMET <- get_daymet(template=vepPolygon,
-                     label='VEPIIN',
-                     elements = c('prcp','tmin','tmax'),
-                     years = 1980:1985)
+DAYMET <- get_daymet(
+  template = FedData::meve,
+  label = "meve",
+  elements = c("prcp", "tmin", "tmax"),
+  years = 1980:1985
+)
 
 # Plot with raster::plot
 plot(DAYMET$tmin$X1985.10.23)

@@ -4,12 +4,16 @@
 \alias{get_ssurgo}
 \title{Download and crop data from the NRCS SSURGO soils database.}
 \usage{
-get_ssurgo(template, label, raw.dir = "./RAW/SSURGO",
-  extraction.dir = paste0("./EXTRACTIONS/", label, "/SSURGO"),
-  force.redo = FALSE)
+get_ssurgo(
+  template,
+  label,
+  raw.dir = paste0(tempdir(), "/FedData/raw/ssurgo"),
+  extraction.dir = paste0(tempdir(), "/FedData/"),
+  force.redo = FALSE
+)
 }
 \arguments{
-\item{template}{A Raster* or Spatial* object to serve 
+\item{template}{A Raster* or Spatial* object to serve
 as a template for cropping; optionally, a vector of area names [e.g., c('IN087','IN088')] may be provided.}
 
 \item{label}{A character string naming the study area.}
@@ -32,38 +36,33 @@ as well as merging their tabular data.
 \details{
 \code{get_ssurgo} returns a named list of length 2:
 \enumerate{
-\item 'spatial': A \code{SpatialPolygonsDataFrame} of soil mapunits 
-in the template, and 
+\item 'spatial': A \code{SpatialPolygonsDataFrame} of soil mapunits
+in the template, and
 \item 'tabular': A named list of \code{\link{data.frame}s} with the SSURGO tabular data.
 }
 }
 \examples{
 \dontrun{
-# Extract data for the Village Ecodynamics Project 'VEPIIN' study area:
-# http://village.anth.wsu.edu
-vepPolygon <- polygon_from_extent(raster::extent(672800,740000,4102000,4170000), 
-     proj4string='+proj=utm +datum=NAD83 +zone=12')
-
 # Get the NRCS SSURGO data (USA ONLY)
-SSURGO.VEPIIN <- get_ssurgo(template=vepPolygon, label='VEPIIN')
+SSURGO.MEVE <- get_ssurgo(template = FedData::meve, label = "meve")
 
 # Plot the VEP polygon
-plot(vepPolygon)
+plot(meve$geometry)
 
 # Plot the SSURGO mapunit polygons
-plot(SSURGO.VEPIIN$spatial, lwd=0.1, add=T)
+plot(SSURGO.MEVE$spatial, lwd = 0.1, add = T)
 
 # Or, download by Soil Survey Area names
-SSURGO.areas <- get_ssurgo(template=c('CO670','CO075'), label='CO_TEST')
+SSURGO.areas <- get_ssurgo(template = c("CO670", "CO075"), label = "CO_TEST")
 
 # Let's just look at spatial data for CO675
-SSURGO.areas.CO675 <- SSURGO.areas$spatial[SSURGO.areas$spatial$AREASYMBOL=='CO075',]
+SSURGO.areas.CO675 <- SSURGO.areas$spatial[SSURGO.areas$spatial$AREASYMBOL == "CO075", ]
 
 # And get the NED data under them for pretty plotting
-NED.CO675 <- get_ned(template=SSURGO.areas.CO675, label='SSURGO_CO675')
+NED.CO675 <- get_ned(template = SSURGO.areas.CO675, label = "SSURGO_CO675")
 
 # Plot the SSURGO mapunit polygons, but only for CO675
 plot(NED.CO675)
-plot(SSURGO.areas.CO675, lwd=0.1, add=T)
+plot(SSURGO.areas.CO675, lwd = 0.1, add = T)
 }
 }

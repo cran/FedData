@@ -2,54 +2,82 @@
 % Please edit documentation in R/NLCD_FUNCTIONS.R
 \name{get_nlcd}
 \alias{get_nlcd}
+\alias{nlcd_colors}
+\alias{pal_nlcd}
 \title{Download and crop the National Land Cover Database.}
 \usage{
-get_nlcd(template, label, year = 2011, dataset = "landcover",
-  raw.dir = "./RAW/NLCD", extraction.dir = paste0("./EXTRACTIONS/",
-  label, "/NLCD"), raster.options = c("COMPRESS=DEFLATE", "ZLEVEL=9",
-  "INTERLEAVE=BAND"), force.redo = F)
+get_nlcd(
+  template,
+  label,
+  year = 2019,
+  dataset = c("landcover", "impervious", "canopy"),
+  landmass = "L48",
+  extraction.dir = paste0(tempdir(), "/FedData/"),
+  raster.options = c("COMPRESS=DEFLATE", "ZLEVEL=9"),
+  force.redo = F
+)
+
+nlcd_colors()
+
+pal_nlcd()
 }
 \arguments{
-\item{template}{A Raster* or Spatial* object to serve 
+\item{template}{A sf, Raster* or Spatial* object to serve
 as a template for cropping.}
 
 \item{label}{A character string naming the study area.}
 
 \item{year}{An integer representing the year of desired NLCD product.
-Acceptable values are 2011 (default), 2006, and 2001.}
+Acceptable values are 2019 (default), 2016, 2011, 2008, 2006, 2004, and 2001.}
 
 \item{dataset}{A character string representing type of the NLCD product.
-Acceptable values are 'landcover' (default), 'impervious', and 'canopy'.
-As of February 7, 2018, the canopy data for 2006 are not available through the National Map Staged datasets,
-and so aren't available in FedData.}
+Acceptable values are 'landcover' (default), 'impervious', and
+'canopy' (2016 and 2011, L48 only).}
 
-\item{raw.dir}{A character string indicating where raw downloaded files should be put.
-The directory will be created if missing. Defaults to './RAW/NLCD/'.}
+\item{landmass}{A character string representing the landmass to be extracted
+Acceptable values are 'L48' (lower 48 US states, the default),
+'AK' (Alaska, 2011 and 2016 only), 'HI' (Hawaii, 2001 only), and
+'PR' (Puerto Rico, 2001 only).}
 
-\item{extraction.dir}{A character string indicating where the extracted and cropped DEM should be put.
-The directory will be created if missing. Defaults to './EXTRACTIONS/NLCD/'.}
+\item{extraction.dir}{A character string indicating where the extracted
+and cropped NLCD data should be put. The directory will be created if missing.}
 
 \item{raster.options}{a vector of options for raster::writeRaster.}
 
-\item{force.redo}{If an extraction for this template and label already exists, should a new one be created?}
+\item{force.redo}{If an extraction for this template and label already exists,
+should a new one be created?}
 }
 \value{
-A \code{RasterLayer} DEM cropped to the extent of the template.
+A \code{RasterLayer} cropped to the bounding box of the template.
 }
 \description{
 \code{get_nlcd} returns a \code{RasterLayer} of NLCD data cropped to a given
-template study area.
+template study area. \code{nlcd_colors} and \code{pal_nlcd} return the NLCD
+legend and color palette, as available through the
+[MLRC website](https://www.mrlc.gov/data/legends/national-land-cover-database-2016-nlcd2016-legend).
+}
+\details{
+NOTE: Prior to FedData version 3.0.0.9000, the `get_nlcd` function returned
+data in the web Mercator coordinate reference system available through
+the [MRLC web mapping services](https://www.mrlc.gov/geoserver/web/), rather
+than data in the NLCD's native projection (a flavor of North American Albers).
+Until the MRLC web services return data in the original projection, these
+data are being served from a Google Cloud bucket of pre-processed cloud-optimized
+GeoTIFFs. The script used to prepare the GeoTIFFs is available at
+[https://github.com/bocinsky/feddata-nlcd](https://github.com/bocinsky/feddata-nlcd).
 }
 \examples{
 \dontrun{
-# Extract data for the Village Ecodynamics Project 'VEPIIN' study area:
-# http://village.anth.wsu.edu
-vepPolygon <- polygon_from_extent(raster::extent(672800,740000,4102000,4170000), 
-     proj4string='+proj=utm +datum=NAD83 +zone=12')
+# Extract data for the Mesa Verde National Park:
 
 # Get the NLCD (USA ONLY)
 # Returns a raster
-NLCD <- get_nlcd(template=vepPolygon, label='VEPIIN')
+NLCD <-
+  get_nlcd(
+    template = FedData::meve,
+    label = "meve",
+    year = 2016
+  )
 
 # Plot with raster::plot
 plot(NLCD)

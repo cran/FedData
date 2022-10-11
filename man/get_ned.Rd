@@ -4,13 +4,18 @@
 \alias{get_ned}
 \title{Download and crop the 1 (~30 meter) or 1/3 (~10 meter) arc-second National Elevation Dataset.}
 \usage{
-get_ned(template, label, res = "1", raw.dir = "./RAW/NED",
-  extraction.dir = paste0("./EXTRACTIONS/", label, "/NED"),
-  raster.options = c("COMPRESS=DEFLATE", "ZLEVEL=9", "INTERLEAVE=BAND"),
-  force.redo = F)
+get_ned(
+  template,
+  label,
+  res = "1",
+  raw.dir = paste0(tempdir(), "/FedData/raw/ned"),
+  extraction.dir = paste0(tempdir(), "/FedData/extractions/ned/", label, "/"),
+  raster.options = c("COMPRESS=DEFLATE", "ZLEVEL=9"),
+  force.redo = F
+)
 }
 \arguments{
-\item{template}{A Raster* or Spatial* object to serve 
+\item{template}{A Raster* or Spatial* object to serve
 as a template for cropping.}
 
 \item{label}{A character string naming the study area.}
@@ -37,14 +42,9 @@ template study area.
 }
 \examples{
 \dontrun{
-# Extract data for the Village Ecodynamics Project 'VEPIIN' study area:
-# http://village.anth.wsu.edu
-vepPolygon <- polygon_from_extent(raster::extent(672800,740000,4102000,4170000), 
-     proj4string='+proj=utm +datum=NAD83 +zone=12')
-
 # Get the NED (USA ONLY)
 # Returns a raster
-NED <- get_ned(template=vepPolygon, label='VEPIIN')
+NED <- get_ned(template = FedData::meve, label = "meve")
 
 # Plot with raster::plot
 plot(NED)

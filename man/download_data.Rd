@@ -4,8 +4,14 @@
 \alias{download_data}
 \title{Use curl to download a file.}
 \usage{
-download_data(url, destdir = getwd(), timestamping = T, nc = F,
-  verbose = F, progress = F)
+download_data(
+  url,
+  destdir = getwd(),
+  timestamping = TRUE,
+  nc = FALSE,
+  verbose = FALSE,
+  progress = FALSE
+)
 }
 \arguments{
 \item{url}{The location of a file.}
