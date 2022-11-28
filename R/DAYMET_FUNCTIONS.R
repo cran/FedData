@@ -72,8 +72,14 @@ get_daymet <- function(template,
                          "ZLEVEL=9",
                          "INTERLEAVE=BAND"
                        ),
-                       force.redo = F,
+                       force.redo = FALSE,
                        progress = TRUE) {
+  if (!requireNamespace("ncdf4", quietly = TRUE)) {
+    stop("Package \"ncdf4\" needed for this function to work. Please install it.",
+      call. = FALSE
+    )
+  }
+
   extraction.dir %<>%
     paste0("/") %>%
     normalizePath(mustWork = FALSE) %T>%
@@ -269,14 +275,14 @@ download_daymet_thredds <-
 
     tempo <-
       c(
-        "ann" = 1852,
-        "mon" = 1855,
-        "daily" = 1840
+        "ann" = 2130,
+        "mon" = 2131,
+        "daily" = 2129
       )[tempo]
 
 
 
-    if (tempo == 1840) {
+    if (tempo == 2129) {
       url <- paste0(
         "https://thredds.daac.ornl.gov/thredds/wcs/ornldaac/",
         tempo,

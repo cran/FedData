@@ -2,8 +2,8 @@ Type: Package
 Package: FedData
 Title: Functions to Automate Downloading Geospatial Data Available from
         Several Federated Data Sources
-Version: 3.0.0
-Date: 2022-10-06
+Version: 3.0.1
+Date: 2022-11-27
 Authors@R: 
     c(person(given = c("R.", "Kyle"),
              family = "Bocinsky",
@@ -48,13 +48,13 @@ Encoding: UTF-8
 LazyData: true
 NeedsCompilation: no
 Repository: CRAN
-RoxygenNote: 7.2.1
-Suggests: covr, ggplot2, testthat
-Packaged: 2022-10-11 16:31:21 UTC; bocinsky
+RoxygenNote: 7.2.2
+Suggests: covr, ggplot2, testthat, rgdal, ncdf4, usethis
+Packaged: 2022-11-27 23:41:50 UTC; bocinsky
 Author: R. Kyle Bocinsky [aut, cre, cph],
   Dylan Beaudette [ctb],
   Scott Chamberlain [ctb, rev],
   Jeffrey Hollister [ctb],
   Julia Gustavsen [rev]
 Maintainer: R. Kyle Bocinsky <bocinsky@gmail.com>
-Date/Publication: 2022-10-11 17:12:40 UTC
+Date/Publication: 2022-11-28 08:00:02 UTC
