@@ -5,15 +5,6 @@
 #' legend and color palette, as available through the
 #' [MLRC website](https://www.mrlc.gov/data/legends/national-land-cover-database-2016-nlcd2016-legend).
 #'
-#' NOTE: Prior to FedData version 3.0.0.9000, the `get_nlcd` function returned
-#' data in the web Mercator coordinate reference system available through
-#' the [MRLC web mapping services](https://www.mrlc.gov/geoserver/web/), rather
-#' than data in the NLCD's native projection (a flavor of North American Albers).
-#' Until the MRLC web services return data in the original projection, these
-#' data are being served from a Google Cloud bucket of pre-processed cloud-optimized
-#' GeoTIFFs. The script used to prepare the GeoTIFFs is available at
-#' [https://github.com/bocinsky/feddata-nlcd](https://github.com/bocinsky/feddata-nlcd).
-#'
 #' @param template A sf, Raster* or Spatial* object to serve
 #' as a template for cropping.
 #' @param label A character string naming the study area.
@@ -64,12 +55,6 @@ get_nlcd <- function(template,
                        "ZLEVEL=9"
                      ),
                      force.redo = FALSE) {
-  if (!requireNamespace("rgdal", quietly = TRUE)) {
-    stop("Package \"rgdal\" needed for this function to work. Please install it.",
-      call. = FALSE
-    )
-  }
-
   extraction.dir <-
     normalizePath(paste0(extraction.dir, "/."), mustWork = FALSE)
 
@@ -82,9 +67,6 @@ get_nlcd <- function(template,
     canopy = "Tree_Canopy"
   )
 
-  # coverage <- paste0("NLCD_", year, "_", dataset, "_", landmass)
-  # source <- "https://www.mrlc.gov/geoserver/wcs"
-
   dir.create(extraction.dir, showWarnings = FALSE, recursive = TRUE)
 
   outfile <-
@@ -94,111 +76,125 @@ get_nlcd <- function(template,
     return(raster::raster(outfile))
   }
 
-  source <- "https://storage.googleapis.com/feddata-r/nlcd/"
-  file <- paste0(year, "_", dataset, "_", landmass, ".tif")
+  src <- "wcs"
 
-  path <- paste0(source, file)
+  if (src == "wcs") {
+    coverage <- paste0("NLCD_", year, "_", dataset, "_", landmass)
+    source <- paste0("https://www.mrlc.gov/geoserver/mrlc_download/", coverage, "/wcs")
 
-  if (path %>%
-    httr::HEAD() %>%
-    httr::status_code() %>%
-    identical(200L) %>%
-    magrittr::not()) {
-    stop(
-      "NLCD data are not available for dataset '", dataset, "', year '", year,
-      "', and landmass '", landmass,
-      "'. Please see available datasets at https://www.mrlc.gov/data."
-    )
+
+    # This code uses the (oft-changing) MRLC web services.
+    if (source %>%
+      httr::GET(query = list(
+        service = "WCS",
+        version = "2.0.1",
+        request = "DescribeCoverage",
+        coverageid = coverage
+      )) %>%
+      httr::status_code() %>%
+      identical(200L) %>%
+      magrittr::not()) {
+      stop("No web coverage service at ", source, ". See available services at https://www.mrlc.gov/geoserver/ows?service=WCS&version=2.0.1&request=GetCapabilities")
+    }
+
+    template %<>%
+      sf::st_transform("+proj=aea +lat_0=23 +lon_0=-96 +lat_1=29.5 +lat_2=45.5 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs") %>%
+      # sf::st_transform(3857) %>%
+      sf::st_bbox()
+
+    axis_labels <-
+      source %>%
+      httr::GET(
+        query = list(
+          service = "WCS",
+          version = "2.0.1",
+          request = "DescribeCoverage",
+          coverageid = coverage
+        )
+      ) %>%
+      httr::content(encoding = "UTF-8") %>%
+      xml2::as_list() %$%
+      CoverageDescriptions %$%
+      CoverageDescription$boundedBy$Envelope %>%
+      attr("axisLabels") %>%
+      stringr::str_split(" ") %>%
+      unlist()
+
+    source %>%
+      httr::GET(
+        query = list(
+          service = "WCS",
+          version = "2.0.1",
+          request = "GetCoverage",
+          coverageid = coverage,
+          subset = paste0(axis_labels[[1]], "(", template["xmin"], ",", template["xmax"], ")"),
+          subset = paste0(axis_labels[[2]], "(", template["ymin"], ",", template["ymax"], ")")
+        ),
+        httr::write_disk(
+          path = outfile,
+          overwrite = TRUE
+        )
+      )
   }
 
-  # template %<>%
-  #   template_to_sf()
 
-  out <-
-    paste0("/vsicurl/", path) %>%
-    terra::rast() %>%
-    terra::crop(.,
-      sf::st_transform(template, sf::st_crs(terra::crs(.))),
-      snap = "out",
-      filename = outfile,
-      datatype = "INT1U",
-      gdal = raster.options,
-      overwrite = TRUE
+  if (src == "cog") {
+    source <- "https://storage.googleapis.com/feddata-r/nlcd/"
+    file <- paste0(year, "_", dataset, "_", landmass, ".tif")
+
+    path <- paste0(source, file)
+
+    if (path %>%
+      httr::HEAD() %>%
+      httr::status_code() %>%
+      identical(200L) %>%
+      magrittr::not()) {
+      stop(
+        "NLCD data are not available for dataset '", dataset, "', year '", year,
+        "', and landmass '", landmass,
+        "'. Please see available datasets at https://www.mrlc.gov/data."
+      )
+    }
+
+    template %<>%
+      template_to_sf()
+
+    out <-
+      paste0("/vsicurl/", path) %>%
+      terra::rast() %>%
+      terra::crop(.,
+        sf::st_transform(template, sf::st_crs(terra::crs(.))),
+        snap = "out",
+        filename = outfile,
+        datatype = "INT1U",
+        gdal = raster.options,
+        overwrite = TRUE
+      )
+  }
+
+  if (dataset == "Land_Cover") {
+    out <-
+      outfile %>%
+      raster::raster() %>%
+      raster::readAll() %>%
+      raster::as.factor()
+
+    raster::colortable(out) <- nlcd$Color
+
+    suppressWarnings(
+      levels(out) <-
+        nlcd %>%
+        as.data.frame()
     )
 
-  ## This code uses the (oft-changing) MRLC web services.
-  ## Once these settle down, I may return to accessing them. Until that time,
-  ## We are using self-hosted cloud-optimized geotiffs, accessed above.
-  # if (source %>%
-  #   httr::GET() %>%
-  #   httr::status_code() %>%
-  #   identical(200L) %>%
-  #   magrittr::not()) {
-  #   stop("No web coverage service at ", source, ". See available services at https://www.mrlc.gov/geoserver/ows?service=WCS&version=2.0.1&request=GetCapabilities")
-  # }
-  #
-  #   template %<>%
-  #     # sf::st_transform("+proj=aea +lat_0=23 +lon_0=-96 +lat_1=29.5 +lat_2=45.5 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs") %>%
-  #     sf::st_transform(3857) %>%
-  #     sf::st_bbox()
-  #
-  #   axis_labels <-
-  #     source %>%
-  #     httr::GET(
-  #       query = list(
-  #         service = "WCS",
-  #         version = "2.0.1",
-  #         request = "DescribeCoverage",
-  #         coverageid = coverage
-  #       )
-  #     ) %>%
-  #     httr::content(encoding = "UTF-8") %>%
-  #     xml2::as_list() %$%
-  #     CoverageDescriptions %$%
-  #     CoverageDescription$boundedBy$Envelope %>%
-  #     attr("axisLabels") %>%
-  #     stringr::str_split(" ") %>%
-  #     unlist()
-  #
-  #   source %>%
-  #     httr::GET(
-  #       query = list(
-  #         service = "WCS",
-  #         version = "2.0.1",
-  #         request = "GetCoverage",
-  #         coverageid = coverage,
-  #         subset = paste0(axis_labels[[1]], "(", template["xmin"], ",", template["xmax"], ")"),
-  #         subset = paste0(axis_labels[[2]], "(", template["ymin"], ",", template["ymax"], ")")
-  #       ),
-  #       httr::write_disk(
-  #         path = outfile,
-  #         overwrite = TRUE
-  #       )
-  #     )
-  #
-  #   if (dataset == "Land_Cover") {
-  #     out <-
-  #       outfile %>%
-  #       raster::raster() %>%
-  #       raster::readAll() %>%
-  #       raster::as.factor()
-  #
-  #     raster::colortable(out) <- nlcd$Color
-  #
-  #     suppressWarnings(
-  #       levels(out) <-
-  #         nlcd %>%
-  #         as.data.frame()
-  #     )
-  #
-  #     out %<>%
-  #       raster::writeRaster(outfile,
-  #         datatype = "INT1U",
-  #         options = raster.options,
-  #         overwrite = TRUE,
-  #         setStatistics = FALSE
-  #       )
-  #   }
+    out %>%
+      terra::rast() %>%
+      terra::writeRaster(outfile,
+        datatype = "INT1U",
+        gdal = raster.options,
+        overwrite = TRUE
+      )
+  }
 
   return(raster::raster(outfile))
 }
