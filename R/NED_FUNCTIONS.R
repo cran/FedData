@@ -1,27 +1,31 @@
 #' Download and crop the 1 (~30 meter) or 1/3 (~10 meter) arc-second National Elevation Dataset.
 #'
-#' \code{get_ned} returns a \code{RasterLayer} of elevation data cropped to a given
+#' `get_ned` returns a `SpatRaster` of elevation data cropped to a given
 #' template study area.
 #'
-#' @param template A Raster* or Spatial* object to serve
-#' as a template for cropping.
+#' @param template An [`Simple Feature`][sf::sf]
+#' or [`SpatRaster`][terra::SpatRaster] object to serve as a template for cropping.
 #' @param label A character string naming the study area.
 #' @param res A character string representing the desired resolution of the NED. '1'
 #' indicates the 1 arc-second NED (the default), while '13' indicates the 1/3 arc-second dataset.
 #' @param extraction.dir A character string indicating where the extracted and cropped DEM should be put.
 #' The directory will be created if missing.
-#' @param raster.options a vector of options for terra::writeRaster.
+#' @param raster.options a vector of GDAL options passed to [terra::writeRaster].
 #' @param force.redo If an extraction for this template and label already exists, should a new one be created?
-#' @return A \code{RasterLayer} DEM cropped to the extent of the template.
+#' @return A `SpatRaster` DEM cropped to the extent of the template.
 #' @export
 #' @importFrom magrittr %>%
 #' @examples
 #' \dontrun{
 #' # Get the NED (USA ONLY)
-#' # Returns a raster
-#' NED <- get_ned(template = FedData::meve, label = "meve")
+#' # Returns a `SpatRaster`
+#' NED <-
+#'   get_ned(
+#'     template = FedData::meve,
+#'     label = "meve"
+#'   )
 #'
-#' # Plot with raster::plot
+#' # Plot with terra::plot
 #' plot(NED)
 #' }
 get_ned <- function(template,
@@ -43,24 +47,24 @@ get_ned <- function(template,
 
   dir.create(extraction.dir, showWarnings = FALSE, recursive = TRUE)
 
-  out_file <- paste0(label, "_NED_", res, ".tif")
+  outfile <-
+    paste0(extraction.dir, "/", label, "_NED_", res, ".tif")
 
-  if (file.exists(file.path(extraction.dir, out_file)) & !force.redo) {
-    extracted.DEM <- raster::raster(file.path(extraction.dir, out_file))
-    return(extracted.DEM)
+  if (file.exists(outfile) & !force.redo) {
+    return(terra::rast(outfile))
   }
 
   template %<>%
     template_to_sf() %>%
     sf::st_transform(4326)
 
-  extent.latlon <- raster::extent(template)
+  extent.latlon <- sf::st_bbox(template)
 
   # Open USGS NED download service.
   # NED tiles are labeled by their northwest corner.
   # Thus, coordinate 36.42N, -105.71W is in grid n37w106
-  wests <- seq(ceiling(abs(extent.latlon@xmax)), ceiling(abs(extent.latlon@xmin)))
-  norths <- seq(ceiling(abs(extent.latlon@ymin)), ceiling(abs(extent.latlon@ymax)))
+  wests <- seq(ceiling(abs(extent.latlon["xmax"])), ceiling(abs(extent.latlon["xmin"])))
+  norths <- seq(ceiling(abs(extent.latlon["ymin"])), ceiling(abs(extent.latlon["ymax"])))
 
   tilesLocations <- as.matrix(expand.grid(norths, wests, stringsAsFactors = FALSE))
 
@@ -96,47 +100,46 @@ get_ned <- function(template,
   }
   tiles <- tiles[which(!sapply(tiles, is.null))]
 
-
   # Mosaic all tiles
   if (length(tiles) > 1) {
     message("Mosaicking NED tiles.")
     utils::flush.console()
 
-    tiles$fun <- mean
-    names(tiles)[1:2] <- c("x", "y")
-    tiles <- do.call(raster::mosaic, tiles)
-
-    gc()
+    tiles %<>%
+      terra::sprc() %>%
+      terra::mosaic(fun = "mean")
   } else {
     tiles <- tiles[[1]]
   }
 
   tiles %>%
-    terra::rast() %>%
     terra::crop(.,
-      sf::st_transform(template, sf::st_crs(raster::crs(.))),
+      sf::st_transform(template, sf::st_crs(terra::crs(.))),
       snap = "out",
-      filename = file.path(extraction.dir, out_file),
+      filename = outfile,
       datatype = "FLT4S",
       gdal = raster.options,
       overwrite = T
     )
+
+  return(terra::rast(outfile))
 }
 
 #' Load and crop tile from the 1 (~30 meter) or 1/3 (~10 meter) arc-second National Elevation Dataset.
 #'
-#' \code{get_ned_tile} returns a \code{RasterLayer} cropped within the specified \code{template}.
+#' `get_ned_tile` returns a`SpatRaster` cropped within the specified `template`.
 #' If template is not provided, returns the entire NED tile.
 #'
-#' @param template A Raster* or Spatial* object to serve
-#' as a template for cropping. If missing, entire tile is returned.
+#' @param template An [`Simple Feature`][sf::sf]
+#' or [`SpatRaster`][terra::SpatRaster] object to serve as a template for cropping.
+#' If missing, entire tile is returned.
 #' @param res A character string representing the desired resolution of the NED. '1'
 #' indicates the 1 arc-second NED (the default), while '13' indicates the 1/3 arc-second dataset.
 #' @param tileNorthing An integer representing the northing (latitude, in degrees north of the equator) of the northwest corner of the tile to
 #' be downloaded.
 #' @param tileWesting An integer representing the westing (longitude, in degrees west of the prime meridian) of the northwest corner of the tile to
 #' be downloaded.
-#' @return A \code{RasterLayer} cropped within the specified \code{template}.
+#' @return A `SpatRaster` cropped to the extent of the template.
 #' @export
 #' @importFrom magrittr %>%
 #' @keywords internal
@@ -161,6 +164,5 @@ get_ned_tile <- function(template = NULL, res = "1", tileNorthing, tileWesting) 
     terra::crop(.,
       sf::st_transform(template, sf::st_crs(terra::crs(.))),
       snap = "out"
-    ) %>%
-    raster::raster()
+    )
 }

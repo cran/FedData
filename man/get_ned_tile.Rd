@@ -7,8 +7,9 @@
 get_ned_tile(template = NULL, res = "1", tileNorthing, tileWesting)
 }
 \arguments{
-\item{template}{A Raster* or Spatial* object to serve
-as a template for cropping. If missing, entire tile is returned.}
+\item{template}{An \code{\link[sf:sf]{Simple Feature}}
+or \code{\link[terra:SpatRaster-class]{SpatRaster}} object to serve as a template for cropping.
+If missing, entire tile is returned.}
 
 \item{res}{A character string representing the desired resolution of the NED. '1'
 indicates the 1 arc-second NED (the default), while '13' indicates the 1/3 arc-second dataset.}
@@ -20,10 +21,10 @@ be downloaded.}
 be downloaded.}
 }
 \value{
-A \code{RasterLayer} cropped within the specified \code{template}.
+A \code{SpatRaster} cropped to the extent of the template.
 }
 \description{
-\code{get_ned_tile} returns a \code{RasterLayer} cropped within the specified \code{template}.
+\code{get_ned_tile} returns a\code{SpatRaster} cropped within the specified \code{template}.
 If template is not provided, returns the entire NED tile.
 }
 \keyword{internal}

@@ -47,7 +47,14 @@ if (getRversion() >= "2.15.1") {
     "YEAR",
     "ELEMENT",
     "MONTH",
-    "NAME"
+    "NAME",
+    "properties",
+    "objectIds",
+    "Color",
+    "cats",
+    "STATION",
+    "DAY",
+    "DATE"
   ))
 }
 
@@ -64,10 +71,9 @@ substr_right <- function(x, n) {
 
 #' Turn an extent object into a polygon
 #'
-#' @param x An \code{\link{extent}} object, or an object from which an extent object can be retrieved.
-#' @param proj4string A PROJ.4 formatted string defining the required projection. If NULL,
-#' the function will attempt to get the projection from x using \code{\link{projection}}
-#' @return A SpatialPolygons object.
+#' @param x An object from which an bounding box object can be retrieved.
+#' @param proj4string A PROJ.4 formatted string defining the required projection.
+#' @return A [`Simple Feature`][sf::sf] object.
 #' @export
 #' @keywords internal
 polygon_from_extent <- function(x, proj4string = NULL) {
@@ -80,21 +86,6 @@ polygon_from_extent <- function(x, proj4string = NULL) {
     x %<>%
       sf::st_transform(proj4string)
   }
-  return(x)
-}
-
-#' Turn a SpatialPolygons object into a SpatialPolygonsDataFrame.
-#'
-#' @param x An SpatialPolygons object.
-#' @return A SpatialPolygonsDataFrame object.
-#' @export
-#' @keywords internal
-spdf_from_polygon <- function(x) {
-  IDs <- sapply((methods::slot(x, "polygons")), function(x) {
-    methods::slot(x, "ID")
-  })
-  df <- data.frame(rep(0, length(IDs)), row.names = IDs)
-  x <- sp::SpatialPolygonsDataFrame(x, df)
   return(x)
 }
 
@@ -130,27 +121,26 @@ read_sf_all <- function(dsn) {
     ))
 }
 
-write_sf_all <- function(x, dsn) {
-  if (is.null(names(x))) {
-    stop("'x' must be a named list.")
-  }
+write_sf_all <-
+  function(x, dsn) {
+    if (is.null(names(x))) {
+      stop("'x' must be a named list.")
+    }
 
-  unlink(dsn,
-    recursive = TRUE,
-    force = TRUE
-  )
-
-  x %>%
-    purrr::iwalk(
-      ~ sf::write_sf(.x,
-        dsn = dsn,
-        layer = .y,
-        delete_layer = TRUE
-      )
+    unlink(dsn,
+      recursive = TRUE,
+      force = TRUE
     )
 
-  return()
-}
+    x %>%
+      purrr::iwalk(
+        ~ sf::write_sf(.x,
+          dsn = dsn,
+          layer = .y,
+          delete_layer = TRUE
+        )
+      )
+  }
 
 #' Get a logical vector of which elements in a vector are sequentially duplicated.
 #'
@@ -342,7 +332,7 @@ check_service <- function(x) {
 
 #' Strip query parameters from a URL
 #'
-#' @param url The URL to be modified
+#' @param x The URL to be modified
 #' @return The URL without parameters
 #' @export
 #' @keywords internal

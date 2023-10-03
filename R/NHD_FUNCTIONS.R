@@ -1,10 +1,10 @@
 #' Download and crop the National Hydrography Dataset.
 #'
-#' \code{get_nhd} returns a list of `sf` objects extracted
+#' \code{get_nhd} returns a list of [`Simple Feature`][sf::sf] objects extracted
 #' from the National Hydrography Dataset.
 #'
-#' @param template A `Raster*`, `Spatial*`, or `sf` object to serve
-#' as a template for cropping.
+#' @param template An [`Simple Feature`][sf::sf]
+#' or [`SpatRaster`][terra::SpatRaster] object to serve as a template for cropping.
 #' @param label A character string naming the study area.
 #' @param nhdplus Extract data from the USGS NHDPlus High Resolution service (experimental)
 #' @param extraction.dir A character string indicating where the extracted and cropped NHD data should be put.
@@ -54,8 +54,8 @@ get_nhd <-
 
     if (nhdplus) {
       nhd_out <-
-        "https://hydro.nationalmap.gov/arcgis/rest/services/NHDPlus_HR/MapServer/" %>%
         esri_query(
+          url = "https://hydro.nationalmap.gov/arcgis/rest/services/NHDPlus_HR/MapServer",
           geom = template,
           layers = c(
             "NHDPoint",
@@ -80,8 +80,8 @@ get_nhd <-
         )
     } else {
       nhd_out <-
-        "https://hydro.nationalmap.gov/arcgis/rest/services/nhd/MapServer/" %>%
         esri_query(
+          url = "https://hydro.nationalmap.gov/arcgis/rest/services/nhd/MapServer",
           geom = template,
           layers = c(
             "Point",
@@ -128,9 +128,9 @@ get_nhd <-
 #' This is more of an example than anything
 #'
 #' @param x The result of [get_nhd].
-#' @param template template A `Raster*`, `Spatial*`, or `sf` object to serve
-#' as a template for cropping.
-#' @return A [ggplot2] panel of plots
+#' @param template An [`Simple Feature`][sf::sf]
+#' or [`SpatRaster`][terra::SpatRaster] object to serve as a template for cropping.
+#' @return A `ggplot2` panel of plots
 #' @importFrom magrittr %>% %<>%
 #' @export
 #' @examples
@@ -186,11 +186,11 @@ plot_nhd <-
 
 #' Download and crop the Watershed Boundary Dataset.
 #'
-#' \code{get_wbd} returns an `sf` collection of the HUC 12 regions within
+#' \code{get_wbd} returns an [`Simple Feature`][sf::sf] collection of the HUC 12 regions within
 #' the specified \code{template}.
 #'
-#' @param template A `Raster*`, `Spatial*`, or `sf` object to serve
-#' as a template for cropping.
+#' @param template An [`Simple Feature`][sf::sf]
+#' or [`SpatRaster`][terra::SpatRaster] object to serve as a template for cropping.
 #' @param label A character string naming the study area.
 #' @param extraction.dir A character string indicating where the extracted and cropped NHD data should be put.
 #' @param force.redo If an extraction for this template and label already exists, should a new one be created?

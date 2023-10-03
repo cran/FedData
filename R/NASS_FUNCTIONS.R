@@ -1,10 +1,10 @@
 #' Download and crop the NASS Cropland Data Layer.
 #'
-#' \code{get_nass_cdl} returns a \code{RasterLayer} of NASS Cropland Data Layer cropped to a given
+#' `get_nass_cdl` returns a [`SpatRaster`][terra::SpatRaster] of NASS Cropland Data Layer cropped to a given
 #' template study area.
 #'
-#' @param template A Raster* or Spatial* object to serve
-#' as a template for cropping.
+#' @param template An [`Simple Feature`][sf::sf]
+#' or [`SpatRaster`][terra::SpatRaster] object to serve as a template for cropping.
 #' @param label A character string naming the study area.
 #' @param year An integer representing the year of desired NASS Cropland Data Layer product.
 #' Acceptable values are 2007--the last year.
@@ -14,7 +14,7 @@
 #' @param force.redo If an extraction for this template and label already exists, should a new one be created?
 #' @param progress Draw a progress bar when downloading?
 #' @param ... Other parameters passed on to [get_nass_cdl].
-#' @return A \code{RasterLayer} cropped to the bounding box of the template.
+#' @return A [`SpatRaster`][terra::SpatRaster] cropped to the bounding box of the template.
 #' @export
 #' @importFrom magrittr %>%
 #' @examples
@@ -30,7 +30,7 @@
 #'     year = 2011
 #'   )
 #'
-#' # Plot with raster::plot
+#' # Plot with terra::plot
 #' plot(NASS)
 #' }
 get_nass_cdl <- function(template,
@@ -44,9 +44,8 @@ get_nass_cdl <- function(template,
                          ),
                          force.redo = FALSE,
                          progress = TRUE) {
-  extraction.dir <- normalizePath(paste0(extraction.dir, "/."), mustWork = FALSE)
-
-  template %<>% template_to_sf()
+  template %<>%
+    template_to_sf()
 
   layer <- paste0("cdl_", year)
   source <- "https://nassgeodata.gmu.edu/CropScapeService/wms_cdlall"
@@ -56,17 +55,9 @@ get_nass_cdl <- function(template,
   outfile <- paste0(extraction.dir, "/", label, "_", layer, "_nass.tif")
 
   if (file.exists(outfile) & !force.redo) {
-    out <-
-      terra::rast(outfile)
-
-    outrast <-
-      raster::raster(out)
-
-    raster::colortable(outrast) <-
-      nass$Color
-
-    return(outrast)
+    return(terra::rast(outfile))
   }
+
 
   if (source %>%
     httr::GET() %>%
@@ -114,10 +105,21 @@ get_nass_cdl <- function(template,
     terra::rast() %>%
     terra::as.factor()
 
-  levels(out) <- dplyr::select(nass, ID, `Land Cover`)
-  terra::coltab(out) <- nass$Color
+  levels(out) <-
+    cdl_colors() %>%
+    as.data.frame()
 
-  out %>%
+  out %<>%
+    terra::droplevels()
+
+  terra::coltab(out) <-
+    cdl_colors() %>%
+    dplyr::select(ID, Color) %>%
+    dplyr::filter(ID %in% cats(out)[[1]]$ID) %>%
+    as.data.frame()
+
+  out %T>%
+    terra::set.values() %>%
     terra::writeRaster(
       filename = outfile,
       overwrite = TRUE,
@@ -129,13 +131,7 @@ get_nass_cdl <- function(template,
   out <-
     terra::rast(outfile)
 
-  outrast <-
-    raster::raster(out)
-
-  raster::colortable(outrast) <-
-    nass$Color
-
-  return(outrast)
+  return(out)
 }
 
 #' @export

@@ -5,13 +5,14 @@
 #'
 #' \code{get_ssurgo} returns a named list of length 2:
 #' \enumerate{
-#' \item 'spatial': A \code{SpatialPolygonsDataFrame} of soil mapunits
+#' \item 'spatial': A [`Simple Feature`][sf::sf] of soil mapunits
 #' in the template, and
 #' \item 'tabular': A named list of \code{\link{data.frame}s} with the SSURGO tabular data.
 #' }
 #'
-#' @param template A Raster* or Spatial* object to serve
-#' as a template for cropping; optionally, a vector of area names [e.g., c('IN087','IN088')] may be provided.
+#' @param template An [`Simple Feature`][sf::sf]
+#' or [`SpatRaster`][terra::SpatRaster] object to serve as a template for cropping.
+#' Optionally, a vector of area names, e.g., `c('IN087','IN088')` may be provided.
 #' @param label A character string naming the study area.
 #' @param raw.dir A character string indicating where raw downloaded files should be put.
 #' The directory will be created if missing. Defaults to './RAW/SSURGO/'.
@@ -20,7 +21,6 @@
 #' @param force.redo If an extraction for this template and label already exists, should a new one be created? Defaults to FALSE.
 #' @return A named list containing the 'spatial' and 'tabular' data.
 #' @export
-#' @importFrom sp SpatialPointsDataFrame %over%
 #' @importFrom readr read_csv write_csv
 #' @examples
 #' \dontrun{
@@ -73,7 +73,7 @@ get_ssurgo <- function(template,
     ))
   }
 
-  if (identical(class(template), "character")) {
+  if (inherits(template, "character")) {
     q <- paste0(
       "SELECT areasymbol, saverest FROM sacatalog WHERE areasymbol IN (", paste(paste0("'", template, "'"), collapse = ","),
       ");"
@@ -209,8 +209,8 @@ download_ssurgo_inventory <- function(raw.dir, ...) {
 #' \code{get_ssurgo_inventory} returns a \code{SpatialPolygonsDataFrame} of the SSURGO study areas within
 #' the specified \code{template}. If template is not provided, returns the entire SSURGO inventory of study areas.
 #'
-#' @param template A Raster* or Spatial* object to serve
-#' as a template for cropping.
+#' @param template An [`Simple Feature`][sf::sf]
+#' or [`SpatRaster`][terra::SpatRaster] object to serve as a template for cropping.
 #' @param raw.dir A character string indicating where raw downloaded files should be put.
 #' The directory will be created if missing.
 #' @return A \code{SpatialPolygonsDataFrame} of the SSURGO study areas within
@@ -225,12 +225,15 @@ get_ssurgo_inventory <- function(template = NULL, raw.dir) {
   }
 
   # If there is a template, only download the areas in the template. Thanks to Dylan Beaudette for this method!
-  if (!is.null(template) &&
-    httr::status_code(
-      httr::GET(
-        "https://sdmdataaccess.nrcs.usda.gov/Spatial/SDMWGS84Geographic.wfs"
-      )
-    ) == 200) {
+  if (
+    !is.null(template) &&
+      httr::status_code(
+        httr::RETRY(
+          verb = "GET",
+          url = "https://sdmdataaccess.nrcs.usda.gov/Spatial/SDMWGS84Geographic.wfs"
+        )
+      ) == 200
+  ) {
     bounds <-
       template %>%
       sf::st_bbox() %>%
@@ -239,16 +242,6 @@ get_ssurgo_inventory <- function(template = NULL, raw.dir) {
     # Only download 1 square degree at a time to avoid oversized AOI error
     if ((sf::st_bbox(template)[["xmax"]] - sf::st_bbox(template)[["xmin"]]) > 1 |
       (sf::st_bbox(template)[["ymax"]] - sf::st_bbox(template)[["ymin"]]) > 1) {
-      grid <- sp::GridTopology(
-        cellcentre.offset = c(-179.5, -89.5),
-        cellsize = c(1, 1),
-        cells.dim = c(360, 180)
-      ) %>%
-        # sp::SpatialGrid(proj4string=CRS("+proj=longlat +datum=WGS84")) %>%
-        methods::as("SpatialPolygons") %>%
-        sf::st_as_sfc() %>%
-        sf::st_set_crs(4326)
-
       bounds %<>%
         sf::st_intersection(grid)
     }
@@ -271,7 +264,9 @@ get_ssurgo_inventory <- function(template = NULL, raw.dir) {
 
         temp.file <- paste0(tempdir(), "/soils.gml")
 
-        httr::GET("https://sdmdataaccess.nrcs.usda.gov/Spatial/SDMWGS84Geographic.wfs",
+        httr::RETRY(
+          verb = "GET",
+          url = "https://sdmdataaccess.nrcs.usda.gov/Spatial/SDMWGS84Geographic.wfs",
           query = list(
             Service = "WFS",
             Version = "1.1.0",
@@ -350,7 +345,6 @@ get_ssurgo_inventory <- function(template = NULL, raw.dir) {
 #' @export
 #' @keywords internal
 download_ssurgo_study_area <- function(area, date, raw.dir) {
-
   # Try to download with the state database, otherwise grab the US
   url <- paste("http://websoilsurvey.sc.egov.usda.gov/DSD/Download/Cache/SSA/wss_SSA_", area, "_[", date, "].zip", sep = "")
   destdir <- raw.dir
@@ -363,13 +357,14 @@ download_ssurgo_study_area <- function(area, date, raw.dir) {
 #'
 #' \code{get_ssurgo_study_area} returns a named list of length 2:
 #' \enumerate{
-#' \item 'spatial': A \code{SpatialPolygonsDataFrame} of soil mapunits
+#' \item 'spatial': A [`Simple Feature`][sf::sf] of soil mapunits
 #' in the template, and
 #' \item 'tabular': A named list of \code{\link{data.frame}s} with the SSURGO tabular data.
 #' }
 #'
-#' @param template A Raster* or Spatial* object to serve
-#' as a template for cropping. If missing, whose study area is returned
+#' @param template An [`Simple Feature`][sf::sf]
+#' or [`SpatRaster`][terra::SpatRaster] object to serve as a template for cropping.
+#' If missing, whose study area is returned
 #' @param area A character string indicating the SSURGO study area to be downloaded.
 #' @param date A character string indicating the date of the most recent update to the SSURGO
 #' area for these data. This information may be gleaned from the SSURGO Inventory (\code{\link{get_ssurgo_inventory}}).
@@ -386,7 +381,7 @@ get_ssurgo_study_area <- function(template = NULL, area, date, raw.dir) {
   }
 
   file <- download_ssurgo_study_area(area = area, date = date, raw.dir = raw.dir)
-  
+
   utils::unzip(file, exdir = tmpdir)
   suppressMessages({
     mapunits <-
@@ -395,7 +390,7 @@ get_ssurgo_study_area <- function(template = NULL, area, date, raw.dir) {
       ) %>%
       sf::st_make_valid()
   })
-  
+
   # Read in all tables
   tablesData <-
     paste0(tmpdir, "/", area, "/tabular") %>%
@@ -406,11 +401,11 @@ get_ssurgo_study_area <- function(template = NULL, area, date, raw.dir) {
     ) %>%
     purrr::map(
       function(file) {
-        # Hack to bypass one line file bug in readr::read_delim 
-        if(length(readLines(file)) == 1){
+        # Hack to bypass one line file bug in readr::read_delim
+        if (length(readLines(file)) == 1) {
           write("\n", file, append = TRUE)
         }
-        
+
         tryCatch(
           return(
             readr::read_delim(file,

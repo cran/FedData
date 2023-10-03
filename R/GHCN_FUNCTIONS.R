@@ -2,16 +2,17 @@
 
 #' Download and crop the Global Historical Climate Network-Daily data.
 #'
-#' \code{get_ghcn_daily} returns a named list of length 2:
+#' `get_ghcn_daily` returns a named list of length 2:
 #' \enumerate{
-#' \item 'spatial': A \code{SpatialPointsDataFrame} of the locations of GHCN weather stations
+#' \item 'spatial': A [`Simple Feature`][sf::sf] of the locations of GHCN weather stations
 #' in the template, and
-#' \item 'tabular': A named list of \code{\link{data.frame}s} with the daily weather data for each station.
+#' \item 'tabular': A named list of type [data.frame()] with the daily weather data for each station.
 #' The name of each list item is the station ID.
 #' }
 #'
-#' @param template A Raster* or Spatial* object to serve
-#' as a template for cropping. Alternatively, a character vector providing GHCN station IDs. If missing, all stations
+#' @param template An [`Simple Feature`][sf::sf]
+#' or [`SpatRaster`][terra::SpatRaster] object to serve as a template for cropping.
+#' Alternatively, a character vector providing GHCN station IDs. If missing, all stations
 #' will be downloaded!
 #' @param label A character string naming the study area.
 #' @param elements A character vector of elements to extract.\cr
@@ -98,9 +99,9 @@
 #' and # corresponds to a code for soil depth.\cr
 #' See SN*# for ground cover and depth codes. \cr
 #' TAVG = Average temperature (tenths of degrees C)
-#' [Note that TAVG from source 'S' corresponds
+#' (Note that TAVG from source 'S' corresponds
 #' to an average for the period ending at
-#' 2400 UTC rather than local midnight]\cr
+#' 2400 UTC rather than local midnight)\cr
 #' THIC = Thickness of ice on water (tenths of mm)\cr
 #' TOBS = Temperature at the time of observation (tenths of degrees C)\cr
 #' TSUN = Daily total sunshine (minutes)\cr
@@ -203,12 +204,25 @@ get_ghcn_daily <- function(template = NULL,
                            label = NULL,
                            elements = NULL,
                            years = NULL,
-                           raw.dir = paste0(tempdir(), "/FedData/raw/ghcn"),
-                           extraction.dir = paste0(tempdir(), "/FedData/extractions/ghcn/", label, "/"),
+                           raw.dir =
+                             file.path(
+                               tempdir(),
+                               "FedData",
+                               "raw",
+                               "ghcn"
+                             ),
+                           extraction.dir =
+                             file.path(
+                               tempdir(),
+                               "FedData",
+                               "extractions",
+                               "ned",
+                               label
+                             ),
                            standardize = F,
                            force.redo = F) {
-  raw.dir <- normalizePath(paste0(raw.dir, "/."), mustWork = FALSE)
-  extraction.dir <- normalizePath(paste0(extraction.dir, "/."), mustWork = FALSE)
+  # raw.dir <- normalizePath(paste0(raw.dir, "/."), mustWork = FALSE)
+  # extraction.dir <- normalizePath(paste0(extraction.dir, "/."), mustWork = FALSE)
 
   dir.create(raw.dir, showWarnings = FALSE, recursive = TRUE)
   dir.create(extraction.dir, showWarnings = FALSE, recursive = TRUE)
@@ -222,21 +236,25 @@ get_ghcn_daily <- function(template = NULL,
   }
 
   message("(Down)Loading GHCN station inventory.")
-  if (!force.redo & file.exists(paste0(extraction.dir, "/", label, "_GHCN_stations.shp"))) {
+  raw_inventory <-
+    file.path(
+      extraction.dir,
+      paste0(label, "_GHCN_stations.fgb")
+    )
+  if (force.redo | !file.exists(raw_inventory)) {
+    unlink(raw_inventory, force = TRUE)
+
     stations.sf <-
-      sf::read_sf(extraction.dir, layer = paste0(label, "_GHCN_stations"))
-  } else {
-    stations.sf <- get_ghcn_inventory(template = template, raw.dir = raw.dir)
+      get_ghcn_inventory(template = template, raw.dir = raw.dir)
 
     stations.sf %>%
       sf::write_sf(
-        file.path(
-          normalizePath(paste0(extraction.dir, "/.")),
-          paste0(label, "_GHCN_stations.shp")
-        ),
-        delete_dsn = TRUE
+        dsn = raw_inventory
       )
   }
+
+  stations.sf <-
+    sf::read_sf(raw_inventory)
 
   # If the user didn't specify target elements, get them all.
   if (!is.null(elements)) {
@@ -439,9 +457,9 @@ download_ghcn_daily_station <- function(ID, raw.dir, force.redo = F) {
 #' and # corresponds to a code for soil depth.\cr
 #' See SN*# for ground cover and depth codes. \cr
 #' TAVG = Average temperature (tenths of degrees C)
-#' [Note that TAVG from source 'S' corresponds
+#' (Note that TAVG from source 'S' corresponds
 #' to an average for the period ending at
-#' 2400 UTC rather than local midnight]\cr
+#' 2400 UTC rather than local midnight)\cr
 #' THIC = Thickness of ice on water (tenths of mm)\cr
 #' TOBS = Temperature at the time of observation (tenths of degrees C)\cr
 #' TSUN = Daily total sunshine (minutes)\cr
@@ -536,7 +554,7 @@ get_ghcn_daily_station <- function(ID,
   daily %<>%
     dplyr::mutate(
       dplyr::across(
-        dplyr::everything(),
+        dplyr::where(is.numeric),
         ~ dplyr::na_if(.x, -9999)
       )
     )
@@ -574,14 +592,14 @@ get_ghcn_daily_station <- function(ID,
 #' Stations with multiple elements will have multiple points. This allows for easy mapping of stations
 #' by element availability.
 #'
-#' @param template A Raster* or Spatial* object to serve
-#' as a template for cropping.
+#' @param template An [`Simple Feature`][sf::sf]
+#' or [`SpatRaster`][terra::SpatRaster] object to serve as a template for cropping.
 #' @param elements A character vector of elements to extract.
 #' Common elements include 'tmin', 'tmax', and 'prcp'.
 #' @param raw.dir A character string indicating where raw downloaded files should be put.
 #' The directory will be created if missing.
-#' @return A \code{SpatialPolygonsDataFrame} of the GHCN stations within
-#' the specified \code{template}
+#' @return A [`Simple Feature`][sf::sf] of the GHCN stations within
+#' the specified `template`
 #' @export
 #' @keywords internal
 get_ghcn_inventory <- function(template = NULL, elements = NULL, raw.dir) {
@@ -640,8 +658,10 @@ get_ghcn_inventory <- function(template = NULL, elements = NULL, raw.dir) {
       stations %<>%
         dplyr::filter(ID %in% template)
     } else {
-      stations %<>%
-        sf::st_intersection(template)
+      suppressWarnings(
+        stations %<>%
+          sf::st_intersection(template)
+      )
     }
   }
 
@@ -652,23 +672,6 @@ get_ghcn_inventory <- function(template = NULL, elements = NULL, raw.dir) {
     dplyr::left_join(station.inventory,
       by = "ID"
     )
-
-
-  # # Convert to SPDF
-  # stations.sp <-
-  #   sp::SpatialPointsDataFrame(
-  #     coords = station.inventory %>%
-  #       dplyr::select_(~LONGITUDE, ~LATITUDE),
-  #     data = station.inventory %>%
-  #       dplyr::left_join(stations %>%
-  #         dplyr::select_("ID", "NAME"), by = "ID") %>%
-  #       dplyr::select_(
-  #         "ID", "NAME", "LATITUDE", "LONGITUDE",
-  #         "ELEMENT", "YEAR_START", "YEAR_END"
-  #       ) %>%
-  #       as.data.frame(),
-  #     proj4string = sp::CRS("+proj=longlat +datum=WGS84")
-  #   )
 
   if (!is.null(elements)) {
     stations.sf %<>%
@@ -690,30 +693,27 @@ get_ghcn_inventory <- function(template = NULL, elements = NULL, raw.dir) {
 #' @export
 #' @keywords internal
 station_to_data_frame <- function(station.data) {
-  data.list <- lapply(1:length(station.data), function(i) {
-    X <- station.data[[i]]
-
-    # Get just the climate info
-    annual.records <- as.matrix(X[, 4:34])
-
-    # Get the number of days per month in the records
-    n.days <- lubridate::days_in_month(as.Date(paste(X$YEAR, X$MONTH, "01", sep = "-")))
-
-    ## Unnwrap each row, accounting for number of days in the month
-    annual.records.unwrapped <- unwrap_rows(annual.records, n.days)
-
-    dates <- as.Date(unlist(mapply(FUN = function(days, dates) {
-      paste(dates, days, sep = "-")
-    }, sapply(n.days, function(x) {
-      1:x
-    }), paste(X$YEAR, X$MONTH, sep = "-"))))
-
-    annual.records.unwrapped <- data.table::data.table(dates, annual.records.unwrapped)
-    names(annual.records.unwrapped) <- c("DATE", names(station.data)[i])
-    data.table::setkey(annual.records.unwrapped, "DATE")
-
-    return(annual.records.unwrapped)
-  })
-
-  return(Reduce(function(x, y) merge(x, y, all = TRUE), data.list))
+  station.data %>%
+    dplyr::bind_rows(.id = "ELEMENT") %>%
+    dplyr::mutate(ELEMENT = factor(ELEMENT,
+      levels = names(station.data),
+      ordered = TRUE
+    )) %>%
+    tidyr::pivot_longer(
+      !c(
+        ELEMENT,
+        STATION,
+        YEAR,
+        MONTH
+      ),
+      names_to = "DAY"
+    ) %>%
+    stats::na.omit() %>%
+    dplyr::mutate(DATE = lubridate::as_date(paste0(YEAR, MONTH, stringr::str_remove(DAY, "D")))) %>%
+    dplyr::select(STATION, DATE, ELEMENT, value) %>%
+    tidyr::pivot_wider(
+      names_from = "ELEMENT",
+      values_from = "value"
+    ) %>%
+    dplyr::select(!STATION)
 }
