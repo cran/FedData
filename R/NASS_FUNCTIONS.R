@@ -18,7 +18,7 @@
 #' @export
 #' @importFrom magrittr %>%
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' # Extract data for the Mesa Verde National Park:
 #'
 #' # Get the NASS CDL (USA ONLY)
@@ -31,7 +31,7 @@
 #'   )
 #'
 #' # Plot with terra::plot
-#' plot(NASS)
+#' terra::plot(NASS)
 #' }
 get_nass_cdl <- function(template,
                          label,
@@ -115,7 +115,7 @@ get_nass_cdl <- function(template,
   terra::coltab(out) <-
     cdl_colors() %>%
     dplyr::select(ID, Color) %>%
-    dplyr::filter(ID %in% cats(out)[[1]]$ID) %>%
+    dplyr::filter(ID %in% terra::cats(out)[[1]]$ID) %>%
     as.data.frame()
 
   out %T>%
@@ -137,7 +137,7 @@ get_nass_cdl <- function(template,
 #' @export
 #' @rdname get_nass_cdl
 get_nass <- function(template, label, ...) {
-  lifecycle::deprecate_warn("3.0.0", "get_nass()", "get_nass_cdl()",
+  lifecycle::deprecate_stop("3.0.0", "get_nass()", "get_nass_cdl()",
     details = "`get_nass()` has become `get_nass_cdl()` to clarify the dataset provided. See `?get_nass_cdl`."
   )
   get_nass_cdl(template, label, ...)

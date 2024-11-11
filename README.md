@@ -24,8 +24,9 @@ sources.
 
 Currently, the package enables extraction from nine datasets:
 
-- The [National Elevation Dataset (NED)](https://ned.usgs.gov) digital
-  elevation models (1 and 1/3 arc-second; USGS)
+- The [National Elevation Dataset
+  (NED)](https://www.usgs.gov/3d-elevation-program) digital elevation
+  models (1 and 1/3 arc-second; USGS)
 - The [National Hydrography Dataset
   (NHD)](https://www.usgs.gov/national-hydrography/national-hydrography-dataset)
   (USGS)
@@ -43,7 +44,8 @@ Currently, the package enables extraction from nine datasets:
 - The [International Tree Ring Data Bank
   (ITRDB)](https://www.ncei.noaa.gov/products/paleoclimatology/tree-ring),
   coordinated by National Climatic Data Center at NOAA
-- The [National Land Cover Database (NLCD)](https://www.mrlc.gov/)
+- The [National Land Cover Database (NLCD)](https://www.mrlc.gov/),
+  including the annual NLCD data
 - The [NASS Cropland Data
   Layer](https://www.nass.usda.gov/Research_and_Science/Cropland/SARS1a.php)
   from the National Agricultural Statistics Service
