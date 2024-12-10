@@ -2,8 +2,8 @@ Type: Package
 Package: FedData
 Title: Download Geospatial Data Available from Several Federated Data
         Sources
-Version: 4.1.0
-Date: 2024-11-06
+Version: 4.2.0
+Date: 2024-12-10
 Authors@R: 
     c(person(given = c("R.", "Kyle"),
              family = "Bocinsky",
@@ -50,14 +50,15 @@ SystemRequirements: GDAL (>= 3.1.0)
 Depends: R (>= 3.2.0)
 Imports: curl, httr, dplyr, tibble, tidyr, stringr, igraph, xml2,
         lifecycle, lubridate, progress, purrr, readr, terra (>= 1.0),
-        sf (>= 1.0), arcgislayers (>= 0.2.0), ggplot2, glue, magrittr
+        sf (>= 1.0), ggplot2, glue, magrittr, jsonlite
 Encoding: UTF-8
 LazyData: true
 NeedsCompilation: no
 Repository: CRAN
 RoxygenNote: 7.3.2
-Suggests: knitr, leaflet, mapview, ncdf4, rmapshaper, testthat, usethis
-Packaged: 2024-11-07 23:20:08 UTC; kyle.bocinsky
+Suggests: arcgislayers (>= 0.2.0), knitr, leaflet, mapview, ncdf4,
+        rmapshaper, testthat, usethis
+Packaged: 2024-12-10 23:22:50 UTC; kyle.bocinsky
 Author: R. Kyle Bocinsky [aut, cre, cph]
     (<https://orcid.org/0000-0003-1862-3428>),
   Dylan Beaudette [ctb],
@@ -65,4 +66,4 @@ Author: R. Kyle Bocinsky [aut, cre, cph]
   Jeffrey Hollister [ctb],
   Julia Gustavsen [rev]
 Maintainer: R. Kyle Bocinsky <bocinsky@gmail.com>
-Date/Publication: 2024-11-11 20:10:05 UTC
+Date/Publication: 2024-12-10 23:40:01 UTC

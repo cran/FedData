@@ -36,7 +36,7 @@
 #' @importFrom magrittr %>% %<>%
 #' @export
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' # Get the PAD-US (USA ONLY)
 #' PADUS <- get_padus(
 #'   template = FedData::meve,
@@ -108,38 +108,34 @@ get_padus <-
         padus_services[layer] %>%
         purrr::map(
           function(x) {
-            file.path(padus_base_url, x, "FeatureServer/") %>%
-              arcgislayers::arc_open() %>%
-              arcgislayers::get_layer(id = 0) %>%
-              arcgislayers::arc_select(
-                where =
-                  paste0(
-                    "Unit_Nm IN (",
-                    paste(paste0("'", template, "'"), collapse = ","),
-                    ")"
-                  )
-              )
+            file.path(padus_base_url, x, "FeatureServer") %>%
+              httr::parse_url() %>%
+              httr::modify_url(.,
+                path = c(.$path, 0, "query"),
+                query = list(
+                  outFields = "*",
+                  f = "pgeojson",
+                  where =
+                    paste0(
+                      "Unit_Nm IN (",
+                      paste(paste0("'", template, "'"), collapse = ","),
+                      ")"
+                    )
+                )
+              ) %>%
+              sf::read_sf()
           }
         )
     } else {
-      template %<>%
-        template_to_sf() %>%
-        sf::st_transform(4326) %>%
-        sf::st_as_sfc() %>%
-        sf::st_union() %>%
-        sf::st_cast("POLYGON")
-
       padus_out <-
         padus_services[layer] %>%
         purrr::map(
           function(x) {
-            file.path(padus_base_url, x, "FeatureServer/") %>%
-              arcgislayers::arc_open() %>%
-              arcgislayers::get_layer(id = 0) %>%
-              arcgislayers::arc_select(
-                filter_geom =
-                  template
-              )
+            agol_filter_httr(
+              url = file.path(padus_base_url, x, "FeatureServer"),
+              layer_name = 0,
+              geom = template
+            )
           }
         )
     }
